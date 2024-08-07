@@ -72,7 +72,7 @@
     "lint": "eslint . --ext .ts",
     "postpack": "shx rm -f oclif.manifest.json",
     "posttest": "npm run lint",
-    "prepack": "oclif manifest && oclif readme",
+    "prepack": "oclif manifest",
     "test": "mocha --require ts-node/register 'src/commands/**/*.e2e.spec.ts'",
     "version": "oclif readme && git add README.md"
   }
