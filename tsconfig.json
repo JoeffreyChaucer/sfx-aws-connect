@@ -18,6 +18,7 @@
     "sourceRoot": "/", // Specify the location where a debugger should locate TypeScript files instead of relative source locations.
 
     // Strict Checks
+    "strict": false,
     "alwaysStrict": true, // Ensures that your files are parsed in the ECMAScript strict mode, and emit “use strict” for each source file.
     "allowUnreachableCode": false, // pick up dead code paths
     "noImplicitAny": true, // In some cases where no type annotations are present, TypeScript will fall back to a type of any for a variable when it cannot infer the type.
@@ -28,9 +29,11 @@
     "noUncheckedIndexedAccess": true, // accessing index must always check for undefined
     "noUnusedLocals": true, // Report errors on unused local variables.
     "noUnusedParameters": true, // Report errors on unused parameters in functions
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    //"noEmit": true
   },
   "include": ["src/**/*"],
+  "exclude": ["node_modules"],
   "ts-node": {
     "esm": true
   }
