@@ -1,7 +1,7 @@
 {
   "name": "sf-aws-connect",
   "description": "A new CLI generated with oclif",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": "joeffreychaucer",
   "bin": {
     "sf": "./bin/run.js"
@@ -13,7 +13,8 @@
     "@aws-sdk/types": "^3.609.0",
     "@oclif/core": "^4",
     "@oclif/plugin-help": "^6",
-    "@oclif/plugin-plugins": "^5"
+    "@oclif/plugin-plugins": "^5",
+    "axios": "^1.7.3"
   },
   "devDependencies": {
     "@oclif/prettier-config": "^0.2.1",
@@ -21,14 +22,17 @@
     "@types/chai": "^4",
     "@types/mocha": "^10",
     "@types/node": "^18",
+    "@types/sinon": "^17.0.3",
     "chai": "^4",
     "eslint": "^8",
     "eslint-config-oclif": "^5",
     "eslint-config-oclif-typescript": "^3",
     "eslint-config-prettier": "^9",
     "mocha": "^10",
+    "nyc": "^17.0.0",
     "oclif": "^4",
     "shx": "^0.3.3",
+    "sinon": "^18.0.0",
     "ts-node": "^10",
     "typescript": "^5"
   },
@@ -49,7 +53,7 @@
   "type": "module",
   "oclif": {
     "bin": "sf",
-    "dirname": "sf",
+    "dirname": "aws-connect",
     "commands": "./dist/commands",
     "plugins": [
       "@oclif/plugin-help",
@@ -58,7 +62,7 @@
     "topicSeparator": " ",
     "topics": {
       "aws-connect": {
-        "description": "Say hello to the world and others"
+        "description": "aws-connect"
       }
     }
   },
@@ -69,8 +73,7 @@
     "postpack": "shx rm -f oclif.manifest.json",
     "posttest": "npm run lint",
     "prepack": "oclif manifest && oclif readme",
-    "test": "mocha --forbid-only \"test/**/*.test.ts\"",
+    "test": "mocha --require ts-node/register 'src/commands/**/*.e2e.spec.ts'",
     "version": "oclif readme && git add README.md"
-  },
-  "types": "dist/index.d.ts"
+  }
 }
