@@ -1,14 +1,14 @@
-import { ListInstancesCommand } from "@aws-sdk/client-connect";
+import { ListInstancesCommand } from '@aws-sdk/client-connect';
 import { Command, Flags } from '@oclif/core';
 
 import { AwsService } from '../../services/aws-service.js';
-import { AwsConfig } from '../../types/index.js';
+import { TAwsAccessFlags } from '../../types/index.js';
 
 export default class ListInstances extends Command {
   static description = 'This command lists all AWS Connect instances in the specified region';
   static override examples = [
-    '$ sf aws-connect list-instances --region ap-southeast-2 --profile dev',
-    '$ sf aws-connect list-instances --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY'
+    '$ aws connect list-instances --region ap-southeast-2 --profile dev',
+    '$ aws connect list-instances --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY'
   ]
   
   static override flags = {
@@ -32,6 +32,11 @@ export default class ListInstances extends Command {
       description: 'AWS secret access key',
       dependsOn: ['accessKeyId'],
     }),
+    secretSessionToken: Flags.string({
+      char: 't',
+      description: 'AWS token session key',
+      dependsOn: ['accessKeyId'],
+    }),
   };
 
   static summary = 'List all AWS Connect instances';
@@ -39,24 +44,35 @@ export default class ListInstances extends Command {
   async run(): Promise<void> {
     const { flags } = await this.parse(ListInstances);
 
-    const config: AwsConfig = {
+    const config: TAwsAccessFlags = {
       accessKeyId: flags.accessKeyId,
       authMethod: flags.profile ? 'sso' : 'accessKey',
       profile: flags.profile,
       region: flags.region,
       secretAccessKey: flags.secretAccessKey,
+      secretSessionToken: flags.secretToken
     };
+    
+    const isAuthValid =
+    config.profile || (config.accessKeyId && config.secretAccessKey && config.secretSessionToken);
+
+    if (!isAuthValid) {
+      this.error('Auth is required: either AWS profile or access key credentials (accessKeyId, secretAccessKey and secretSessionToken) must be provided.', { exit: 1 });
+    }
+    
 
     await this.listInstances(config);
   }
 
-  private async listInstances(config: AwsConfig): Promise<void> {
+  private async listInstances(config: TAwsAccessFlags): Promise<void> {
     const awsService = AwsService.getInstance(config);
 
     try {
       const connectClient = await awsService.getConnectClient();
       const command = new ListInstancesCommand({});
       const response = await connectClient.send(command);
+      
+      console.log(response)
 
       if (!response.InstanceSummaryList || response.InstanceSummaryList.length === 0) {
         this.log('No Amazon Connect instances found.');
@@ -64,8 +80,15 @@ export default class ListInstances extends Command {
       }
 
       console.log('Instances:', response.InstanceSummaryList);
-    } catch {
-      this.error('Error listing Amazon Connect instances:', { exit: 1 });
+    } catch(error: unknown) {
+      if(error instanceof Error){
+        if (error.name === 'UnrecognizedClientException') {
+          this.error('Authentication Error: Please check your AWS credentials and region.');
+        } else {
+          this.error(`Error listing Amazon Connect instances: ${error.message}`);
+        }
+      }
+  
     }
   }
 }

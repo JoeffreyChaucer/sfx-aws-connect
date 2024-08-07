@@ -2,18 +2,18 @@ import { ConnectClient } from "@aws-sdk/client-connect";
 import { fromSSO } from "@aws-sdk/credential-provider-sso";
 import { AwsCredentialIdentity } from "@aws-sdk/types";
 
-import { AwsConfig } from '../types/index.js';
+import { TAwsAccessFlags } from '../types/index.js';
 
 export class AwsService {
-  private config: AwsConfig;
+  private config: TAwsAccessFlags;
   private credentials: AwsCredentialIdentity | undefined;
   private static instance: AwsService;
 
-  private constructor(config: AwsConfig) {
+  private constructor(config: TAwsAccessFlags) {
     this.config = config;
   }
 
-  static getInstance(config: AwsConfig): AwsService {
+  static getInstance(config: TAwsAccessFlags): AwsService {
     if (!AwsService.instance) {
       AwsService.instance = new AwsService(config);
     }
@@ -22,11 +22,12 @@ export class AwsService {
   }
 
   async getConnectClient(): Promise<ConnectClient> {
-    const credentials = await this.getCredentials();
-    return new ConnectClient({ 
-      credentials,
-      region: this.config.region
-    });
+      const credentials: AwsCredentialIdentity = await this.getCredentials();
+      const connectClient: ConnectClient = new ConnectClient({ 
+        credentials,
+        region: this.config.region
+      });
+      return connectClient
   }
 
   private async getCredentials(): Promise<AwsCredentialIdentity> {
@@ -42,6 +43,7 @@ export class AwsService {
       this.credentials = {
         accessKeyId: this.config.accessKeyId,
         secretAccessKey: this.config.secretAccessKey,
+        sessionToken: this.config.secretSessionToken
       };
     } else if (this.config.authMethod === 'sso') {
       if (!this.config.profile) {
