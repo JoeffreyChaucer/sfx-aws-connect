@@ -44,7 +44,7 @@
     "/dist",
     "/oclif.manifest.json"
   ],
-  "homepage": "https://github.com/Desktop/sf-aws-connect",
+  "homepage": "https://github.com/JoeffreyChaucer/sf-aws-connect",
   "keywords": [
     "oclif"
   ],
@@ -66,7 +66,7 @@
       }
     }
   },
-  "repository": "Desktop/sf-aws-connect",
+  "repository": "JoeffreyChaucer/sf-aws-connect",
   "scripts": {
     "build": "shx rm -rf dist && tsc -b",
     "lint": "eslint . --ext .ts",
