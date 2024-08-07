@@ -72,8 +72,6 @@ export default class ListInstances extends Command {
       const command = new ListInstancesCommand({});
       const response = await connectClient.send(command);
       
-      console.log(response)
-
       if (!response.InstanceSummaryList || response.InstanceSummaryList.length === 0) {
         this.log('No Amazon Connect instances found.');
         return;
