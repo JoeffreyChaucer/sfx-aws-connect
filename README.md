@@ -18,7 +18,7 @@ A new CLI generated with oclif
 <!-- usage -->
 
 ```sh-session
-$ npm install -g sf-aws-connect
+$ npm install -g sf-aws-connect-dev
 $ sf-aws-connect COMMAND
 running command...
 $ sf-aws-connect (--version)
