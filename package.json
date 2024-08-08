@@ -6,7 +6,7 @@
   "bin": {
     "sf": "./bin/run.js"
   },
-  "bugs": "https://github.com/Desktop/sf-aws-connect/issues",
+  "bugs": "https://github.com/Desktop/sfx-aws-connect/issues",
   "dependencies": {
     "@aws-sdk/client-connect": "^3.621.0",
     "@aws-sdk/credential-provider-sso": "^3.621.0",
@@ -44,7 +44,7 @@
     "/dist",
     "/oclif.manifest.json"
   ],
-  "homepage": "https://github.com/JoeffreyChaucer/sf-aws-connect",
+  "homepage": "https://github.com/JoeffreyChaucer/sfx-aws-connect",
   "keywords": [
     "oclif"
   ],
@@ -66,7 +66,7 @@
       }
     }
   },
-  "repository": "JoeffreyChaucer/sf-aws-connect",
+  "repository": "JoeffreyChaucer/sfx-aws-connect",
   "scripts": {
     "build": "shx rm -rf dist && tsc -b",
     "lint": "eslint . --ext .ts",
