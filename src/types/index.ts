@@ -21,7 +21,7 @@ export type TAwsAccessFlags = {
   } & TAwsAccessFlags
   
   
-export type TComponentType = 'hoursOfOperation' | 'queues' | 'prompts' | 'flows' | 'lambda-functions';
+export type TComponentType = 'hoursOfOperation' | 'queues' | 'prompts' | 'flows' | 'routingProfiles' | 'lambda-functions';
 
 
 

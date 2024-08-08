@@ -1,17 +1,18 @@
 import { Command, Flags } from '@oclif/core';
 
 import { downloadAllFlows, downloadSingleFlow } from '../download/flows.js';
-import {downloadAllHoursOfOperation, downloadSingleHoursOfOperation} from '../download/hours-of-operation.js'
+import { downloadAllHoursOfOperation, downloadSingleHoursOfOperation } from '../download/hours-of-operation.js'
 import { downloadAllPrompts, downloadSinglePrompt } from '../download/prompts.js';
 import { downloadAllQueues, downloadSingleQueue } from '../download/queues.js';
+import { downloadAllRoutingProfiles, downloadSingleRoutingProfile } from '../download/routing-profiles.js'
 import { AwsService } from '../services/aws-service.js';
 import { TComponentType, TDownloadComponentParams } from '../types/index.js';
 
 export default class download  extends Command {
     static description = 'Download aws components from AWS Connect instance';
     static override examples = [
-      '$ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue --outputPath ./downloads --region ap-southeast-2 --profile dev',
-      '$ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY'
+      '$ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queues --outputPath ./downloads --region ap-southeast-2 --profile dev',
+      '$ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queues:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY'
     ]
     
   static override flags = {
@@ -22,7 +23,7 @@ export default class download  extends Command {
     }),
     componentType: Flags.string({
       char: 'c',
-      description: 'Component type to download. Use "Comptype" for all, or "Comptype:Id" for a single component. Valid types: hoursOfOperation, queues, prompts, flows, lambda-functions',
+      description: 'Component type to download. Use "Comptype" for all, or "Comptype:Id" for a single component. Valid types: hoursOfOperation, queues, prompts, flows, routingProfiles, lambda-functions',
       required: true,
     }),
     outputDir: Flags.string({
@@ -104,7 +105,7 @@ export default class download  extends Command {
       }
       
       const [baseType, id] = config.componentType.split(':');
-      const validTypes: TComponentType[] = ['hoursOfOperation', 'queues', 'prompts', 'flows', 'lambda-functions'];
+      const validTypes: TComponentType[] = ['hoursOfOperation', 'queues', 'prompts', 'flows', 'routingProfiles', 'lambda-functions'];
       
       if (!validTypes.includes(baseType as TComponentType)) {
         this.error(`Unsupported component type: ${baseType}`, { exit: 1 });
@@ -175,6 +176,11 @@ export default class download  extends Command {
         break;
       }
       
+      case 'routingProfiles': {
+        downloadedFiles = await downloadAllRoutingProfiles(config);
+        break;
+      }
+     
       // Add cases for other component types here
       default: {
         throw new Error(`Unsupported component type: ${componentType}`);
@@ -229,6 +235,10 @@ export default class download  extends Command {
         break;
       }
         
+      case 'routingProfiles': {
+        fileName = await downloadSingleRoutingProfile(config);
+        break;
+      }
         
       // Add cases for other component types here
       default: {
