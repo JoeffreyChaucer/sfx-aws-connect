@@ -48,7 +48,13 @@ USAGE
 
 FLAGS
   -c, --componentType=<value>       (required) Component type to download. Use "Comptype" for all, or "Comptype:Id" for
-                                    a single component. Valid types: hoursOfOperation, queues, prompts, flows, routingProfiles,
+                                    a single component.
+                                    Valid types:
+                                    hoursOfOperation,
+                                    queues,
+                                    prompts,
+                                    flows,
+                                    routingProfiles,
                                     lambda-functions
   -i, --instanceId=<value>          (required) AWS Connect Instance ID
   -k, --accessKeyId=<value>         AWS access key ID
