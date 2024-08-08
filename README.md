@@ -18,13 +18,13 @@ A new CLI generated with oclif
 
 ```sh-session
 $ npm install -g sf-aws-connect
-$ sf aws-connect COMMAND
+$ sfx COMMAND
 running command...
-$ sf aws-connect (--version)
-sf-aws-connect/0.1.0 win32-x64 node-v20.16.0
-$ sf aws-connect--help [COMMAND]
+$ sfx (--version)
+sf-aws-connect/0.1.4 win32-x64 node-v20.16.0
+$ sfx --help [COMMAND]
 USAGE
-  $ sf aws-connect COMMAND
+  $ sfx COMMAND
 ...
 ```
 
@@ -32,16 +32,16 @@ USAGE
 
 <!-- commands -->
 
-- [`sf aws-connect download`](#sf-aws-connect-download)
-- [`sf aws-connect list-instances`](#sf-aws-connect-list-instances)
+- [`sfx aws-connect download`](#sfx-aws-connect-download)
+- [`sfx aws-connect list-instances`](#sfx-aws-connect-list-instances)
 
-## `sf aws-connect download`
+## `sfx aws-connect download`
 
 Download components from AWS Connect
 
 ```
 USAGE
-  $ sf aws-connect download -i <value> -c <value> -o <value> -r <value> [-p <value> | -k <value> | -s <value>]
+  $ sfx aws-connect download -i <value> -c <value> -o <value> -r <value> [-p <value> | -k <value> | -s <value>]
     [--overrideFile] [-t <value> ]
 
 FLAGS
@@ -63,20 +63,20 @@ DESCRIPTION
   Download aws components from AWS Connect instance
 
 EXAMPLES
-  $ sf aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue --outputPath ./downloads --region ap-southeast-2 --profile dev
+  $ sfx aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue --outputPath ./downloads --region ap-southeast-2 --profile dev
 
-  $ sf aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY
+  $ sfx aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY
 ```
 
-_See code: [src/commands/aws-connect/download.ts](https://github.com/JoeffreyChaucer/sf-aws-connect/blob/v0.1.0/src/commands/aws-connect/download.ts)_
+_See code: [src/commands/aws-connect/download.ts](https://github.com/JoeffreyChaucer/sf-aws-connect/blob/v0.1.4/src/commands/aws-connect/download.ts)_
 
-## `sf aws-connect list-instances`
+## `sfx aws-connect list-instances`
 
 List all AWS Connect instances
 
 ```
 USAGE
-  $ sf aws-connect list-instances [-p <value> | -k <value> | -s <value>] [-r <value>] [-t <value> ]
+  $ sfx aws-connect list-instances [-p <value> | -k <value> | -s <value>] [-r <value>] [-t <value> ]
 
 FLAGS
   -k, --accessKeyId=<value>         AWS access key ID
@@ -91,9 +91,9 @@ DESCRIPTION
   This command lists all AWS Connect instances in the specified region
 
 EXAMPLES
-  $ aws connect list-instances --region ap-southeast-2 --profile dev
+  $ sfx aws connect list-instances --region ap-southeast-2 --profile dev
 
-  $ aws connect list-instances --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY
+  $ sfx aws connect list-instances --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY
 ```
 
-_See code: [src/commands/aws-connect/list-instances.ts](https://github.com/JoeffreyChaucer/sf-aws-connect/blob/v0.1.0/src/commands/aws-connect/list-instances.ts)_
+_See code: [src/commands/aws-connect/list-instances.ts](https://github.com/JoeffreyChaucer/sf-aws-connect/blob/v0.1.4/src/commands/aws-connect/list-instances.ts)_

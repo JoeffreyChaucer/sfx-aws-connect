@@ -7,8 +7,8 @@ import { TAwsAccessFlags } from '../../types/index.js';
 export default class ListInstances extends Command {
   static description = 'This command lists all AWS Connect instances in the specified region';
   static override examples = [
-    '$ aws connect list-instances --region ap-southeast-2 --profile dev',
-    '$ aws connect list-instances --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY'
+    '$ sfx aws connect list-instances --region ap-southeast-2 --profile dev',
+    '$ sfx aws connect list-instances --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY'
   ]
   
   static override flags = {
