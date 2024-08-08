@@ -1,10 +1,10 @@
 {
-  "name": "sfx-aws-connect",
+  "name": "sf-aws-connect",
   "description": "A new CLI generated with oclif",
   "version": "0.1.0",
   "author": "joeffreychaucer",
   "bin": {
-    "sf": "./bin/run.js"
+    "sf-aws-connect": "./bin/run.js"
   },
   "bugs": "https://github.com/Desktop/sfx-aws-connect/issues",
   "dependencies": {
@@ -52,8 +52,8 @@
   "main": "dist/index.js",
   "type": "module",
   "oclif": {
-    "bin": "sfx",
-    "dirname": "aws-connect",
+    "bin": "sf-aws-connect",
+    "dirname": "sf-aws-connect",
     "commands": "./dist/commands",
     "plugins": [
       "@oclif/plugin-help",

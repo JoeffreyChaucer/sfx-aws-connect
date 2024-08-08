@@ -1,14 +1,14 @@
 import { ListInstancesCommand } from '@aws-sdk/client-connect';
 import { Command, Flags } from '@oclif/core';
 
-import { AwsService } from '../../services/aws-service.js';
-import { TAwsAccessFlags } from '../../types/index.js';
+import { AwsService } from '../services/aws-service.js';
+import { TAwsAccessFlags } from '../types/index.js';
 
 export default class ListInstances extends Command {
   static description = 'This command lists all AWS Connect instances in the specified region';
   static override examples = [
-    '$ sfx aws connect list-instances --region ap-southeast-2 --profile dev',
-    '$ sfx aws connect list-instances --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY'
+    '$ sf-aws-connect list-instances --region ap-southeast-2 --profile dev',
+    '$ sf-aws-connect list-instances --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY'
   ]
   
   static override flags = {

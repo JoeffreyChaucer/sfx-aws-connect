@@ -8,6 +8,7 @@ A new CLI generated with oclif
 
 <!-- toc -->
 
+- [sf-aws-connect](#sf-aws-connect)
 - [Usage](#usage)
 - [Commands](#commands)
 <!-- tocstop -->
@@ -18,13 +19,13 @@ A new CLI generated with oclif
 
 ```sh-session
 $ npm install -g sf-aws-connect
-$ sfx COMMAND
+$ sf-aws-connect COMMAND
 running command...
-$ sfx (--version)
-sf-aws-connect/0.1.4 win32-x64 node-v20.16.0
-$ sfx --help [COMMAND]
+$ sf-aws-connect (--version)
+sf-aws-connect/0.1.0 win32-x64 node-v20.16.0
+$ sf-aws-connect --help [COMMAND]
 USAGE
-  $ sfx COMMAND
+  $ sf-aws-connect COMMAND
 ...
 ```
 
@@ -32,16 +33,17 @@ USAGE
 
 <!-- commands -->
 
-- [`sfx aws-connect download`](#sfx-aws-connect-download)
-- [`sfx aws-connect list-instances`](#sfx-aws-connect-list-instances)
+- [`sf-aws-connect download`](#sf-aws-connect-download)
+- [`sf-aws-connect list-instances`](#sf-aws-connect-list-instances)
+- [`sf-aws-connect help [COMMAND]`](#sf-aws-connect-help-command)
 
-## `sfx aws-connect download`
+## `sf-aws-connect download`
 
 Download components from AWS Connect
 
 ```
 USAGE
-  $ sfx aws-connect download -i <value> -c <value> -o <value> -r <value> [-p <value> | -k <value> | -s <value>]
+  $ sf-aws-connect download -i <value> -c <value> -o <value> -r <value> [-p <value> | -k <value> | -s <value>]
     [--overrideFile] [-t <value> ]
 
 FLAGS
@@ -63,20 +65,40 @@ DESCRIPTION
   Download aws components from AWS Connect instance
 
 EXAMPLES
-  $ sfx aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue --outputPath ./downloads --region ap-southeast-2 --profile dev
+  $ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue --outputPath ./downloads --region ap-southeast-2 --profile dev
 
-  $ sfx aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY
+  $ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY
 ```
 
-_See code: [src/commands/aws-connect/download.ts](https://github.com/JoeffreyChaucer/sf-aws-connect/blob/v0.1.4/src/commands/aws-connect/download.ts)_
+_See code: [src/commands/download.ts](https://github.com/JoeffreyChaucer/sfx-aws-connect/blob/v0.1.0/src/commands/download.ts)_
 
-## `sfx aws-connect list-instances`
+## `sf-aws-connect help [COMMAND]`
+
+Display help for sf-aws-connect.
+
+```
+USAGE
+  $ sf-aws-connect help [COMMAND...] [-n]
+
+ARGUMENTS
+  COMMAND...  Command to show help for.
+
+FLAGS
+  -n, --nested-commands  Include all nested commands in the output.
+
+DESCRIPTION
+  Display help for sf-aws-connect.
+```
+
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v6.2.7/src/commands/help.ts)_
+
+## `sf-aws-connect list-instances`
 
 List all AWS Connect instances
 
 ```
 USAGE
-  $ sfx aws-connect list-instances [-p <value> | -k <value> | -s <value>] [-r <value>] [-t <value> ]
+  $ sf-aws-connect list-instances [-p <value> | -k <value> | -s <value>] [-r <value>] [-t <value> ]
 
 FLAGS
   -k, --accessKeyId=<value>         AWS access key ID
@@ -91,9 +113,9 @@ DESCRIPTION
   This command lists all AWS Connect instances in the specified region
 
 EXAMPLES
-  $ sfx aws connect list-instances --region ap-southeast-2 --profile dev
+  $ sf-aws-connect list-instances --region ap-southeast-2 --profile dev
 
-  $ sfx aws connect list-instances --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY
+  $ sf-aws-connect list-instances --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY
 ```
 
-_See code: [src/commands/aws-connect/list-instances.ts](https://github.com/JoeffreyChaucer/sf-aws-connect/blob/v0.1.4/src/commands/aws-connect/list-instances.ts)_
+_See code: [src/commands/list-instances.ts](https://github.com/JoeffreyChaucer/sfx-aws-connect/blob/v0.1.0/src/commands/list-instances.ts)_

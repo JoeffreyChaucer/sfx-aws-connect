@@ -1,17 +1,17 @@
 import { Command, Flags } from '@oclif/core';
 
-import { downloadAllFlows, downloadSingleFlow } from '../../download/flows.js';
-import {downloadAllHoursOfOperation, downloadSingleHoursOfOperation} from '../../download/hours-of-operation.js'
-import { downloadAllPrompts, downloadSinglePrompt } from '../../download/prompts.js';
-import { downloadAllQueues, downloadSingleQueue } from '../../download/queues.js';
-import { AwsService } from '../../services/aws-service.js';
-import { TComponentType, TDownloadComponentParams } from '../../types/index.js';
+import { downloadAllFlows, downloadSingleFlow } from '../download/flows.js';
+import {downloadAllHoursOfOperation, downloadSingleHoursOfOperation} from '../download/hours-of-operation.js'
+import { downloadAllPrompts, downloadSinglePrompt } from '../download/prompts.js';
+import { downloadAllQueues, downloadSingleQueue } from '../download/queues.js';
+import { AwsService } from '../services/aws-service.js';
+import { TComponentType, TDownloadComponentParams } from '../types/index.js';
 
 export default class download  extends Command {
     static description = 'Download aws components from AWS Connect instance';
     static override examples = [
-      '$ sfx aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue --outputPath ./downloads --region ap-southeast-2 --profile dev',
-      '$ sfx aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY'
+      '$ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue --outputPath ./downloads --region ap-southeast-2 --profile dev',
+      '$ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queue:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY'
     ]
     
   static override flags = {
