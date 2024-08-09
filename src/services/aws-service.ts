@@ -1,4 +1,5 @@
 import { ConnectClient } from "@aws-sdk/client-connect";
+import { LambdaClient } from "@aws-sdk/client-lambda";
 import { fromSSO } from "@aws-sdk/credential-provider-sso";
 import { AwsCredentialIdentity } from "@aws-sdk/types";
 
@@ -22,13 +23,21 @@ export class AwsService {
   }
 
   async getConnectClient(): Promise<ConnectClient> {
-      const credentials: AwsCredentialIdentity = await this.getCredentials();
-      const connectClient: ConnectClient = new ConnectClient({ 
-        credentials,
-        region: this.config.region
-      });
-      return connectClient
+    const credentials: AwsCredentialIdentity = await this.getCredentials();
+    return new ConnectClient({ 
+      credentials,
+      region: this.config.region
+    });
   }
+  
+  async getLambdaClient(): Promise<LambdaClient> {
+    const credentials: AwsCredentialIdentity = await this.getCredentials();
+    return new LambdaClient({ 
+      credentials,
+      region: this.config.region
+    });
+  }
+
 
   private async getCredentials(): Promise<AwsCredentialIdentity> {
     if (this.credentials) {
