@@ -1,4 +1,5 @@
-import { ConnectClient } from "@aws-sdk/client-connect";
+import type { ConnectClient } from "@aws-sdk/client-connect";
+import type { LambdaClient } from "@aws-sdk/client-lambda";
 
 export type TAwsAccessFlags = {
     accessKeyId?: string;
@@ -10,8 +11,9 @@ export type TAwsAccessFlags = {
   };
   
   
-  export type TDownloadComponentParams = {
+export type TDownloadComponentParams = {
     connectClient?: ConnectClient;
+    LambdaClient?: LambdaClient;
     instanceId: string;
     componentType?: string;
     outputDir: string;
