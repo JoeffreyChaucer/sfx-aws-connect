@@ -2,6 +2,7 @@ import { Command, Flags } from '@oclif/core';
 
 import { downloadAllContactFlows, downloadSpecificContactFlow } from '../download/contact-flows.js';
 import { downloadAllHoursOfOperation, downloadSpecificHoursOfOperation } from '../download/hours-of-operation.js'
+import { downloadAllLambdaFunctions, downloadSpecificLambdaFunction} from '../download/lambda-functions.js';
 import { downloadAllPrompts, downloadSpecificPrompt } from '../download/prompts.js';
 import { downloadAllQueues, downloadSpecificQueue } from '../download/queues.js';
 import { downloadAllRoutingProfiles, downloadSpecificRoutingProfile } from '../download/routing-profiles.js'
@@ -98,6 +99,7 @@ export default class download  extends Command {
   private async download(config: TDownloadComponentParams): Promise<void> {
     const awsService: AwsService = AwsService.getInstance(config);
     const connectClient = await awsService.getConnectClient()
+    const lambdaClient = await awsService.getLambdaClient()
     
     try {
       
@@ -119,6 +121,7 @@ export default class download  extends Command {
       await (id && id !== 'Id'
         ? this.downloadSpecificComponent({
           connectClient,
+          lambdaClient,
           instanceId: config.instanceId,
           componentType: baseType as TComponentType,
           id,
@@ -127,6 +130,7 @@ export default class download  extends Command {
         })
         : this.downloadAllComponents({
           connectClient,
+          lambdaClient,
           instanceId: config.instanceId,
           componentType: baseType as TComponentType,
           outputDir: config.outputDir,
@@ -147,6 +151,7 @@ export default class download  extends Command {
 
   private async downloadAllComponents({
     connectClient,
+    lambdaClient,
     instanceId,
     componentType,
     outputDir,
@@ -185,6 +190,15 @@ export default class download  extends Command {
         downloadedFiles = await downloadAllRoutingProfiles(config);
         break;
       }
+      
+      case 'lambdaFunctions': {
+        downloadedFiles = await downloadAllLambdaFunctions({
+          lambdaClient,
+          outputDir,
+          overrideFile
+        });
+        break;
+      }
      
       // Add cases for other component types here
       default: {
@@ -202,6 +216,7 @@ export default class download  extends Command {
 
   private async downloadSpecificComponent({
     connectClient,
+    lambdaClient,
     instanceId,
     componentType,
     id,
@@ -242,6 +257,16 @@ export default class download  extends Command {
         
       case 'routingProfiles': {
         fileName = await downloadSpecificRoutingProfile(config);
+        break;
+      }
+      
+      case 'lambdaFunctions': {
+        fileName = await downloadSpecificLambdaFunction({
+          lambdaClient,
+          id,
+          outputDir,
+          overrideFile
+        });
         break;
       }
       
