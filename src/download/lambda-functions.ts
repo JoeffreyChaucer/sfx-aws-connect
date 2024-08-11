@@ -105,6 +105,7 @@ export async function downloadSpecificLambdaFunction({
 
   export async function downloadAllLambdaFunctions({
     connectClient,
+    lambdaClient,
     instanceId, 
     outputDir,
     overrideFile
@@ -121,18 +122,12 @@ export async function downloadSpecificLambdaFunction({
     }
     
     
-    const functionNames: (string | undefined)[] = listResponse.LambdaFunctions
+    const downloadPromises: Promise<string | null>[] = (listResponse.LambdaFunctions || [])
     .filter((arn): arn is string => typeof arn === 'string')
-    .map(arn => {
-      const parts: string[] = arn.split(':');
-      const lastPart: string | undefined = parts.at(-1);
-      
-      return lastPart ? lastPart.split(':')[0] : undefined; 
-    });
-    
-    const downloadPromises: Promise<string | null>[] = functionNames.map(functionName => 
+    .map(arn => arn.endsWith(":active") ? arn.slice(0, -7) : arn)
+    .map(functionName => 
       downloadSpecificLambdaFunction({
-        connectClient,
+        lambdaClient,
         instanceId,
         outputDir,
         overrideFile,
@@ -145,3 +140,7 @@ export async function downloadSpecificLambdaFunction({
   // Filter out null results (failed downloads) and return successful downloads
   return downloadResults.filter((result): result is string => result !== null);
   }
+  
+  
+  
+  

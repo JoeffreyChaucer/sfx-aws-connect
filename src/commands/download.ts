@@ -1,5 +1,6 @@
 import { Command, Flags } from '@oclif/core';
 
+import { downloadAllAgentStatuses, downloadSpecificAgentStatus } from '../download/agent-status.js';
 import { downloadAllContactFlows, downloadSpecificContactFlow } from '../download/contact-flows.js';
 import { downloadAllHoursOfOperation, downloadSpecificHoursOfOperation } from '../download/hours-of-operation.js'
 import { downloadAllLambdaFunctions, downloadSpecificLambdaFunction} from '../download/lambda-functions.js';
@@ -9,7 +10,7 @@ import { downloadAllRoutingProfiles, downloadSpecificRoutingProfile } from '../d
 import { AwsService } from '../services/aws-service.js';
 import { TComponentType, TDownloadComponentParams } from '../types/index.js';
 
-export default class download  extends Command {
+export default class download extends Command {
     static description: string = 'Download aws components from AWS Connect instance';
     static override examples: string[] = [
       '$ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queues --outputPath ./downloads --region ap-southeast-2 --profile dev',
@@ -108,7 +109,7 @@ export default class download  extends Command {
       }
 
       const [baseType, id] = config.componentType.split(':');
-      const validTypes: TComponentType[] = ['hoursOfOperation', 'queues', 'prompts', 'contactFlows', 'routingProfiles', 'lambdaFunctions'];
+      const validTypes: TComponentType[] = ['hoursOfOperation', 'queues', 'prompts', 'contactFlows', 'routingProfiles', 'agentStatus', 'lambdaFunctions'];
       
       if (!validTypes.includes(baseType as TComponentType)) {
         this.error(
@@ -191,9 +192,16 @@ export default class download  extends Command {
         break;
       }
       
+      case 'agentStatus': {
+        downloadedFiles = await downloadAllAgentStatuses(config);
+        break;
+      }
+      
       case 'lambdaFunctions': {
         downloadedFiles = await downloadAllLambdaFunctions({
+          connectClient,
           lambdaClient,
+          instanceId,
           outputDir,
           overrideFile
         });
@@ -257,6 +265,11 @@ export default class download  extends Command {
         
       case 'routingProfiles': {
         fileName = await downloadSpecificRoutingProfile(config);
+        break;
+      }
+      
+      case 'agentStatus': {
+        fileName = await downloadSpecificAgentStatus(config);
         break;
       }
       

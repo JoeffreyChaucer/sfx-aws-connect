@@ -24,8 +24,6 @@ export class FileService implements IFileService {
 
       // Delete the zip file after extraction
       fs.unlinkSync(zipFilePath);
-
-      console.log(`Extracted and deleted zip file: ${zipFilePath}`);
     } catch (error) {
       console.error(`Error extracting or deleting zip file ${zipFilePath}:`, error);
       throw error;
