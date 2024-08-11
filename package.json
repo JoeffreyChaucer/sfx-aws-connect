@@ -9,16 +9,19 @@
   "bugs": "https://github.com/Desktop/sfx-aws-connect/issues",
   "dependencies": {
     "@aws-sdk/client-connect": "^3.621.0",
+    "@aws-sdk/client-lambda": "^3.624.0",
     "@aws-sdk/credential-provider-sso": "^3.621.0",
     "@aws-sdk/types": "^3.609.0",
     "@oclif/core": "^4",
     "@oclif/plugin-help": "^6",
     "@oclif/plugin-plugins": "^5",
+    "adm-zip": "^0.5.15",
     "axios": "^1.7.3"
   },
   "devDependencies": {
     "@oclif/prettier-config": "^0.2.1",
     "@oclif/test": "^4",
+    "@types/adm-zip": "^0.5.5",
     "@types/chai": "^4",
     "@types/mocha": "^10",
     "@types/node": "^18",
