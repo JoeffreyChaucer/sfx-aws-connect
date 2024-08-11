@@ -1,16 +1,16 @@
 import { Command, Flags } from '@oclif/core';
 
-import { downloadAllFlows, downloadSingleFlow } from '../download/flows.js';
-import { downloadAllHoursOfOperation, downloadSingleHoursOfOperation } from '../download/hours-of-operation.js'
-import { downloadAllPrompts, downloadSinglePrompt } from '../download/prompts.js';
-import { downloadAllQueues, downloadSingleQueue } from '../download/queues.js';
-import { downloadAllRoutingProfiles, downloadSingleRoutingProfile } from '../download/routing-profiles.js'
+import { downloadAllContactFlows, downloadSpecificContactFlow } from '../download/contact-flows.js';
+import { downloadAllHoursOfOperation, downloadSpecificHoursOfOperation } from '../download/hours-of-operation.js'
+import { downloadAllPrompts, downloadSpecificPrompt } from '../download/prompts.js';
+import { downloadAllQueues, downloadSpecificQueue } from '../download/queues.js';
+import { downloadAllRoutingProfiles, downloadSpecificRoutingProfile } from '../download/routing-profiles.js'
 import { AwsService } from '../services/aws-service.js';
 import { TComponentType, TDownloadComponentParams } from '../types/index.js';
 
 export default class download  extends Command {
-    static description = 'Download aws components from AWS Connect instance';
-    static override examples = [
+    static description: string = 'Download aws components from AWS Connect instance';
+    static override examples: string[] = [
       '$ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queues --outputPath ./downloads --region ap-southeast-2 --profile dev',
       '$ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queues:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY'
     ]
@@ -23,7 +23,7 @@ export default class download  extends Command {
     }),
     componentType: Flags.string({
       char: 'c',
-      description: 'Component type to download. Use "Comptype" for all, or "Comptype:Id" for a single component. Valid types: hoursOfOperation, queues, prompts, flows, routingProfiles, lambda-functions',
+      description: 'Component type to download. Use "ComponentType" for all, or "ComponentType:Id" for a single component. Valid types: hoursOfOperation, queues, prompts, contactFlows, routingProfiles, lambdaFunctions',
       required: true,
     }),
     outputDir: Flags.string({
@@ -64,7 +64,7 @@ export default class download  extends Command {
     }),
   };
   
-  static summary = 'Download components from AWS Connect';
+  static summary: string = 'Download components from AWS Connect';
   
   
   async run(): Promise<void> {
@@ -96,23 +96,28 @@ export default class download  extends Command {
   }
 
   private async download(config: TDownloadComponentParams): Promise<void> {
-    const awsService = AwsService.getInstance(config);
-    const connectClient = await awsService.getConnectClient();
-
+    const awsService: AwsService = AwsService.getInstance(config);
+    const connectClient = await awsService.getConnectClient()
+    
     try {
+      
       if (!config.componentType) {
         this.error('Component type is required', { exit: 1 });
       }
-      
+
       const [baseType, id] = config.componentType.split(':');
-      const validTypes: TComponentType[] = ['hoursOfOperation', 'queues', 'prompts', 'flows', 'routingProfiles', 'lambda-functions'];
+      const validTypes: TComponentType[] = ['hoursOfOperation', 'queues', 'prompts', 'contactFlows', 'routingProfiles', 'lambdaFunctions'];
       
       if (!validTypes.includes(baseType as TComponentType)) {
-        this.error(`Unsupported component type: ${baseType}`, { exit: 1 });
+        this.error(
+          `Unsupported component type: ${baseType}\n` +
+          `Valid types are: ${validTypes.join(', ')}`,
+          { exit: 1 }
+        );
       }
 
       await (id && id !== 'Id'
-        ? this.downloadSingleComponent({
+        ? this.downloadSpecificComponent({
           connectClient,
           instanceId: config.instanceId,
           componentType: baseType as TComponentType,
@@ -129,12 +134,12 @@ export default class download  extends Command {
         })
       );
       
-    } catch(error: unknown) {
+    } catch(error) {
       if(error instanceof Error){
         if (error.name === 'UnrecognizedClientException') {
           this.error('Authentication Error: Please check your AWS credentials and region.');
         } else {
-          this.error(`Error downloading component: ${error.message}`);
+          this.error(`An unexpected error occurred: ${error.message}`);
         }
       }
     }
@@ -166,8 +171,8 @@ export default class download  extends Command {
         break;
       }
       
-      case 'flows': {
-        downloadedFiles = await downloadAllFlows(config);
+      case 'contactFlows': {
+        downloadedFiles = await downloadAllContactFlows(config);
         break;
       }
       
@@ -195,7 +200,7 @@ export default class download  extends Command {
     }
   }
 
-  private async downloadSingleComponent({
+  private async downloadSpecificComponent({
     connectClient,
     instanceId,
     componentType,
@@ -209,43 +214,47 @@ export default class download  extends Command {
       instanceId,
       id,
       outputDir, 
-      overrideFile
+      overrideFile,
     }
     
-    let fileName: string;
+    let fileName: string | null;
     
     switch (componentType) {
       case 'hoursOfOperation': {
-        fileName = await downloadSingleHoursOfOperation(config);
+        fileName = await downloadSpecificHoursOfOperation(config);
         break;
       }
 
       case 'queues': {
-        fileName = await downloadSingleQueue(config);
+        fileName = await downloadSpecificQueue(config);
         break;
       }
       
-      case 'flows': {
-        fileName = await downloadSingleFlow(config);
+      case 'contactFlows': {
+        fileName = await downloadSpecificContactFlow(config);
         break;
       }
 
       case 'prompts': {
-        fileName = await downloadSinglePrompt(config);
+        fileName = await downloadSpecificPrompt(config);
         break;
       }
         
       case 'routingProfiles': {
-        fileName = await downloadSingleRoutingProfile(config);
+        fileName = await downloadSpecificRoutingProfile(config);
         break;
       }
-        
+      
       // Add cases for other component types here
       default: {
         throw new Error(`Unsupported component type: ${componentType}`);
       }
     }
 
-    this.log(`Downloaded: ${fileName}`);
+    if (fileName) {
+      this.log(`Downloaded: ${fileName}`);
+    } else {
+      this.error(`Failed to download ${componentType} with ID ${id}`);
+    }
   }
 }

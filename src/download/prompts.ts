@@ -1,71 +1,82 @@
-import { DescribePromptCommand, GetPromptFileCommand, ListPromptsCommand } from "@aws-sdk/client-connect";
-import axios from 'axios';
-import fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { AccessDeniedException, DescribePromptCommand, DescribePromptCommandOutput, GetPromptFileCommand, GetPromptFileCommandOutput, ListPromptsCommand, ListPromptsCommandOutput, Prompt, ResourceNotFoundException } from "@aws-sdk/client-connect";
+import axios, { AxiosResponse } from 'axios';
 
 import { FileService } from '../services/file-service.js';
 import { TDownloadComponentParams } from '../types/index.js';
 
-type PromptResponse = {
-  Prompt?: {
-    Name: string;
-    PromptId: string;
-    PromptArn: string;
-  },
+type TPrompt = {
+  Prompt?: Prompt
 };
 
-export async function downloadSinglePrompt({
+export async function downloadSpecificPrompt({
   connectClient,
   instanceId,
-  id,
+  id: promptId,
   outputDir,
   overrideFile
-}: TDownloadComponentParams): Promise<string> {
-  const describeCommand = new DescribePromptCommand({
-    InstanceId: instanceId,
-    PromptId: id
-  });
-  
+}: TDownloadComponentParams): Promise<string | null> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
   }
 
-  const describeResponse = await connectClient.send(describeCommand);
-
-  if (describeResponse.Prompt) {
-    const getPromptCommand = new GetPromptFileCommand({
+  try {
+    const describeResponse: DescribePromptCommandOutput = await connectClient.send(new DescribePromptCommand({
       InstanceId: instanceId,
-      PromptId: id
-    });
-    const getPromptResponse = await connectClient.send(getPromptCommand);
-    const presignedUrl = getPromptResponse.PromptPresignedUrl;
+      PromptId: promptId
+    }));
 
-    const response = await axios({
+    const prompt: Prompt | undefined = describeResponse.Prompt;
+    if (!prompt) return null;
+    
+    const restructuredData: TPrompt = {
+      Prompt: {
+        Name: prompt.Name,
+        PromptId: prompt.PromptId,
+        PromptARN: prompt.PromptARN,
+        Description: prompt.Description,
+        Tags: prompt.Tags,
+        LastModifiedTime: prompt.LastModifiedTime,
+        LastModifiedRegion: prompt.LastModifiedRegion
+      }
+    };
+
+    const fileName: string | undefined = prompt.Name;
+    const safeOutputDir: string = outputDir ?? './prompts';
+    
+    const jsonFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.json', overrideFile);
+    FileService.writeJsonToFile(jsonFilePath, restructuredData, overrideFile)
+    
+    const getPromptResponse: GetPromptFileCommandOutput = await connectClient.send(new GetPromptFileCommand({
+      InstanceId: instanceId,
+      PromptId: promptId
+    }));
+    
+    const presignedUrl: string | undefined = getPromptResponse.PromptPresignedUrl;
+
+    const response: AxiosResponse = await axios({
       method: 'get',
       url: presignedUrl,
       responseType: 'arraybuffer'
     });
 
-    const restructuredData: PromptResponse = {
-      Prompt: {
-        Name: describeResponse.Prompt.Name || '',
-        PromptId: describeResponse.Prompt.PromptId || '',
-        PromptArn: describeResponse.Prompt.PromptARN || '',
-      }
-    };
+    const filePath: string = FileService.getFileName(outputDir, fileName, '.wav', overrideFile);
+    const savedFileName = FileService.writeBinaryToFile(filePath, response.data, overrideFile);
 
-    FileService.createDirectory(outputDir);
-    const fileName = restructuredData.Prompt?.Name || 'Unknown_Prompt';
-    const filePath = FileService.getFileName(outputDir, fileName, '.wav', overrideFile);
-    await fs.writeFile(filePath, response.data);
+    return savedFileName;
+  } catch (error) {
+    
+    if (error instanceof ResourceNotFoundException) {
+      console.warn(`Prompt with ID ${promptId} not found. It may have been deleted.`);
+    } else if (error instanceof Error && error.message.includes('Invalid parameter')) {
+      console.warn(`Invalid prompt ID: ${promptId}. Please check the ID and ensure it's correctly formatted.`);
+    } else if (error instanceof AccessDeniedException) {
+      console.error(`Access denied: You don't have permission to access prompt ${promptId}.`);
+    } else {
+      console.error(`Unexpected error downloading prompt ${promptId}:`, error);
+    }
 
-    const jsonFilePath = FileService.getFileName(outputDir, fileName, '.json', overrideFile);
-    FileService.writeJsonToFile(jsonFilePath, restructuredData, overrideFile);
-
-    return path.basename(filePath);
+    return null
   }
-
-  throw new Error(`Prompt with ID ${id} not found.`);
 }
 
 export async function downloadAllPrompts({
@@ -77,38 +88,28 @@ export async function downloadAllPrompts({
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
   }
-
-  const listCommand = new ListPromptsCommand({ InstanceId: instanceId });
-  const listResponse = await connectClient.send(listCommand);
+  
+  const listResponse: ListPromptsCommandOutput = await connectClient.send(new ListPromptsCommand({ InstanceId: instanceId }));
 
   if (!listResponse.PromptSummaryList || listResponse.PromptSummaryList.length === 0) {
+    console.warn('No Prompts found for this Connect instance.');
     return [];
   }
 
-  FileService.createDirectory(outputDir);
-    
-    const downloadPromises = listResponse.PromptSummaryList
+  const downloadPromises: Promise<string | null>[] = listResponse.PromptSummaryList
     .filter(summary => summary.Id)
-    .map(async summary => {
-      const downloadConfig: TDownloadComponentParams = {
+    .map(summary => 
+      downloadSpecificPrompt({
         connectClient,
         instanceId,
         outputDir,
         overrideFile,
         id: summary.Id!,
-      };
-  
-      try {
-        return await downloadSinglePrompt(downloadConfig);
-      } catch {
-        return null;
-      } // Return null for failed downloads
-    });
+      }).catch(() => null)
+    );
       
-  const downloadResults = await Promise.all(downloadPromises);
+  const downloadResults: (string | null)[] = await Promise.all(downloadPromises);
 
   // Filter out null results (failed downloads) and return successful downloads
-  const downloadedFiles = downloadResults.filter((result): result is string => result !== null);
-
-  return downloadedFiles;
+  return downloadResults.filter((result): result is string => result !== null);
 }

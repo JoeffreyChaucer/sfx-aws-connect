@@ -1,5 +1,4 @@
-import { Queue as AwsQueue, DescribeQueueCommand, ListQueuesCommand } from "@aws-sdk/client-connect";
-import * as path from 'node:path';
+import { AccessDeniedException, Queue as AwsQueue, DescribeQueueCommand, ListQueuesCommand, ListQueuesCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
 
 import { FileService } from '../services/file-service.js';
 import { TDownloadComponentParams } from '../types/index.js';
@@ -8,50 +7,61 @@ type QueueResponse = {
   Queue?: AwsQueue,
 };
 
-export async function downloadSingleQueue({
+export async function downloadSpecificQueue({
   connectClient,
   instanceId,
-  id,
+  id: queueId,
   outputDir,
   overrideFile
-}: TDownloadComponentParams): Promise<string> {
-  const describeCommand = new DescribeQueueCommand({
-    InstanceId: instanceId,
-    QueueId: id
-  });
-  
+}: TDownloadComponentParams): Promise<string | null> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
   }
 
-  const describeResponse = await connectClient.send(describeCommand);
+  try {
+    const describeResponse = await connectClient.send(new DescribeQueueCommand({
+      InstanceId: instanceId,
+      QueueId: queueId
+    }));
 
-  if (describeResponse.Queue) {
-    
+    const queue = describeResponse.Queue;
+    if (!queue) return null;
+
     const restructuredData: QueueResponse = {
       Queue: {
-        Name: describeResponse.Queue.Name,
-        QueueArn: describeResponse.Queue.QueueArn,
-        QueueId: describeResponse.Queue.QueueId,
-        Description: describeResponse.Queue.Description,
-        OutboundCallerConfig: describeResponse.Queue.OutboundCallerConfig,
-        HoursOfOperationId: describeResponse.Queue.HoursOfOperationId,
-        MaxContacts: describeResponse.Queue.MaxContacts,
-        Status: describeResponse.Queue.Status,
-        Tags: describeResponse.Queue.Tags,
-        LastModifiedTime: describeResponse.Queue.LastModifiedTime,
-        LastModifiedRegion: describeResponse.Queue.LastModifiedRegion || ''
+        Name: queue.Name,
+        QueueArn: queue.QueueArn,
+        QueueId: queue.QueueId,
+        Description: queue.Description,
+        OutboundCallerConfig: queue.OutboundCallerConfig,
+        HoursOfOperationId: queue.HoursOfOperationId,
+        MaxContacts: queue.MaxContacts,
+        Status: queue.Status,
+        Tags: queue.Tags,
+        LastModifiedTime: queue.LastModifiedTime,
+        LastModifiedRegion: queue.LastModifiedRegion
       }
     };
     
-    FileService.createDirectory(outputDir);
-    const fileName = `${restructuredData.Queue?.Name ?? 'Unknown_Queue'}`;
+    const fileName = queue.Name ?? 'Unknown_Queue';
     const filePath = FileService.getFileName(outputDir, fileName, '.json', overrideFile);
     FileService.writeJsonToFile(filePath, restructuredData, overrideFile);
-    return path.basename(filePath);
+    
+    return fileName ?? null;
+  } catch (error) {
+    
+    if (error instanceof ResourceNotFoundException) {
+      console.warn(`Queue with ID ${queueId} not found. It may have been deleted.`);
+    } else if (error instanceof Error && error.message.includes('Invalid parameter')) {
+      console.warn(`Invalid queue ID: ${queueId}. Please check the ID and ensure it's correctly formatted.`);
+    } else if (error instanceof AccessDeniedException) {
+      console.error(`Access denied: You don't have permission to access queue ${queueId}.`);
+    } else {
+      console.error(`Unexpected error downloading queue ${queueId}:`, error);
+    }
+
+    return null;
   }
- 
-  throw new Error(`Queue with ID ${id} not found.`);
 }
 
 export async function downloadAllQueues({
@@ -64,37 +74,27 @@ export async function downloadAllQueues({
     throw new Error('ConnectClient is not provided');
   }
 
-  const listCommand = new ListQueuesCommand({ InstanceId: instanceId });
-  const listResponse = await connectClient.send(listCommand);
+  const listResponse: ListQueuesCommandOutput = await connectClient.send(new ListQueuesCommand({ InstanceId: instanceId }));
 
   if (!listResponse.QueueSummaryList || listResponse.QueueSummaryList.length === 0) {
+    console.warn('No Queues found for this Connect instance.');
     return [];
   }
 
-  FileService.createDirectory(outputDir);
-
-    const downloadPromises = listResponse.QueueSummaryList
+  const downloadPromises = listResponse.QueueSummaryList
     .filter(summary => summary.Id)
-    .map(async summary => {
-      const downloadConfig: TDownloadComponentParams = {
+    .map(summary => 
+      downloadSpecificQueue({
         connectClient,
         instanceId,
         outputDir,
         overrideFile,
         id: summary.Id!,
-      };
-  
-      try {
-        return await downloadSingleQueue(downloadConfig);
-      } catch {
-        return null;
-      } // Return null for failed downloads
-    });
+      }).catch(() => null)
+    );
       
   const downloadResults = await Promise.all(downloadPromises);
 
   // Filter out null results (failed downloads) and return successful downloads
-  const downloadedFiles = downloadResults.filter((result): result is string => result !== null);
-
-  return downloadedFiles;
+  return downloadResults.filter((result): result is string => result !== null);
 }

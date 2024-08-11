@@ -1,62 +1,68 @@
-import { HoursOfOperation as AwsHoursOfOperation, DescribeHoursOfOperationCommand, ListHoursOfOperationsCommand } from "@aws-sdk/client-connect";
-import * as path from 'node:path';
+import { AccessDeniedException, DescribeHoursOfOperationCommand, DescribeHoursOfOperationCommandOutput, ListHoursOfOperationsCommand, ListHoursOfOperationsCommandOutput, ResourceNotFoundException, HoursOfOperation as TAWSHoursOfOperation } from "@aws-sdk/client-connect";
 
 import { FileService } from '../services/file-service.js';
 import { TDownloadComponentParams } from '../types/index.js';
 
-type HoursOfOperationResponse = {
-  HoursOfOperation?: AwsHoursOfOperation,
+type THoursOfOperation = {
+  HoursOfOperation?: TAWSHoursOfOperation,
 };
 
-export async function downloadSingleHoursOfOperation({
+export async function downloadSpecificHoursOfOperation({
   connectClient,
   instanceId,
-  id,
+  id: hoursOfOperationId,
   outputDir,
   overrideFile
-}: TDownloadComponentParams): Promise<string> {
+}: TDownloadComponentParams): Promise<string | null> {
   
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
   }
 
-  const describeCommand = new DescribeHoursOfOperationCommand({
-    InstanceId: instanceId,
-    HoursOfOperationId: id
-  });
-  const describeResponse = await connectClient.send(describeCommand);
-
-
-  if (describeResponse.HoursOfOperation) {
+  try {
+    const describeResponse: DescribeHoursOfOperationCommandOutput = await connectClient.send(new DescribeHoursOfOperationCommand({
+      InstanceId: instanceId,
+      HoursOfOperationId: hoursOfOperationId
+    }));
+  
+    const hoursOfOperation: TAWSHoursOfOperation | undefined = describeResponse.HoursOfOperation;
+    if (!hoursOfOperation) return null;
     
-    const lastModifiedTime = describeResponse.HoursOfOperation.LastModifiedTime
-    ? new Date(describeResponse.HoursOfOperation.LastModifiedTime)
-    : undefined; // or p // Default to ISO format with Zulu time (UTC)
-
-    
-    const restructuredData: HoursOfOperationResponse = {
+    const restructuredData: THoursOfOperation = {
       HoursOfOperation: {
-        HoursOfOperationId: describeResponse.HoursOfOperation.HoursOfOperationId,
-        HoursOfOperationArn: describeResponse.HoursOfOperation.HoursOfOperationArn,
-        Name: describeResponse.HoursOfOperation.Name,
-        Description: describeResponse.HoursOfOperation.Description,
-        TimeZone: describeResponse.HoursOfOperation.TimeZone,
-        Config: describeResponse.HoursOfOperation.Config,
-        Tags: describeResponse.HoursOfOperation.Tags,
-        LastModifiedTime:lastModifiedTime,
-        LastModifiedRegion: describeResponse.HoursOfOperation.LastModifiedRegion || ''
+        HoursOfOperationId: hoursOfOperation.HoursOfOperationId,
+        HoursOfOperationArn: hoursOfOperation.HoursOfOperationArn,
+        Name: hoursOfOperation.Name,
+        Description: hoursOfOperation.Description,
+        TimeZone: hoursOfOperation.TimeZone,
+        Config: hoursOfOperation.Config,
+        Tags: hoursOfOperation.Tags,
+        LastModifiedTime:hoursOfOperation.LastModifiedTime,
+        LastModifiedRegion: hoursOfOperation.LastModifiedRegion
       }
     };
     
+    const fileName: string | undefined = hoursOfOperation.Name;
+    const safeOutputDir: string = outputDir ?? './hours-of-operation';
     
-    FileService.createDirectory(outputDir);
-    const fileName = `${restructuredData.HoursOfOperation?.Name ?? 'Unknown_HoursOfOperation'}`;
-    const filePath = FileService.getFileName(outputDir, fileName, '.json', overrideFile);
-    FileService.writeJsonToFile(filePath, restructuredData, overrideFile);
-    return path.basename(filePath);
-  }
+    const jsonFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.json', overrideFile);
+    FileService.writeJsonToFile(jsonFilePath, restructuredData, overrideFile);
+    
+    return fileName ?? null;
+  } catch (error) {
+    if (error instanceof ResourceNotFoundException) {
+      console.warn(`Hours of operation with ID ${hoursOfOperationId} not found. It may have been deleted.`);
+    } else if (error instanceof Error && error.message.includes('Invalid parameter')) {
+      console.warn(`Invalid Hours of operation ID: ${hoursOfOperationId}. Please check the ID and ensure it's correctly formatted.`);
+    } else if (error instanceof AccessDeniedException) {
+      console.error(`Access denied: You don't have permission to access Hours of operation ${hoursOfOperationId}.`);
+    } else {
+      console.error(`Unexpected error downloading Hours of operation ${hoursOfOperationId}:`, error);
+    }
+
+    return null;
  
-    throw new Error(`Hours of operation with ID ${id} not found.`);
+  }
   
 }
 
@@ -70,38 +76,27 @@ export async function downloadAllHoursOfOperation({
     throw new Error('ConnectClient is not provided');
   }
 
-  const listCommand = new ListHoursOfOperationsCommand({ InstanceId: instanceId });
-  const listResponse = await connectClient.send(listCommand);
+  const listResponse: ListHoursOfOperationsCommandOutput = await connectClient.send(new ListHoursOfOperationsCommand({ InstanceId: instanceId }));
 
   if (!listResponse.HoursOfOperationSummaryList || listResponse.HoursOfOperationSummaryList.length === 0) {
+    console.warn('No Hours Of Operation found for this Connect instance.');
     return [];
   }
 
-  FileService.createDirectory(outputDir);
-
-  const downloadPromises = listResponse.HoursOfOperationSummaryList
+  const downloadPromises: Promise<string | null>[] = listResponse.HoursOfOperationSummaryList
   .filter(summary => summary.Id)
-  .map(async summary => {
-    const downloadConfig: TDownloadComponentParams = {
+  .map(summary => 
+    downloadSpecificHoursOfOperation({
       connectClient,
       instanceId,
       outputDir,
       overrideFile,
       id: summary.Id!,
-    };
-
-    try {
-      return await downloadSingleHoursOfOperation(downloadConfig);
-    } catch {
-      return null;
-    } // Return null for failed downloads
-  });
+    }).catch(() => null)
+  );   
     
-  const downloadResults = await Promise.all(downloadPromises);
+  const downloadResults: (string | null)[] = await Promise.all(downloadPromises);
 
-    // Filter out null results (failed downloads) and return successful downloads
-  const downloadedFiles = downloadResults.filter((result): result is string => result !== null);
-   
-
-  return downloadedFiles;
+  // Filter out null results (failed downloads) and return successful downloads
+  return downloadResults.filter((result): result is string => result !== null);
 }
