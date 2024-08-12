@@ -53,9 +53,10 @@ FLAGS
                                     hoursOfOperation,
                                     queues,
                                     prompts,
-                                    flows,
+                                    contactFlows,
                                     routingProfiles,
-                                    lambda-functions
+                                    agentStatus,
+                                    lambdaFunctions
   -i, --instanceId=<value>          (required) AWS Connect Instance ID
   -k, --accessKeyId=<value>         AWS access key ID
   -o, --outputDir=<value>           (required) Output path for the downloaded component(s)
@@ -63,7 +64,7 @@ FLAGS
   -r, --region=<value>              (required) [default: ap-southeast-2] AWS region
   -s, --secretAccessKey=<value>     AWS secret access key
   -t, --secretSessionToken=<value>  AWS token session key
-      --[no-]overrideFile           Override existing files
+      --[no-]overWrite              overWrite existing components
 
 DESCRIPTION
   Download components from AWS Connect
@@ -73,7 +74,7 @@ DESCRIPTION
 EXAMPLES
   $ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queues --outputPath ./downloads --region ap-southeast-2 --profile dev
 
-  $ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queues:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY
+  $ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queues:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY  --secretSessionToken YOUR_SESSION_KEY
 ```
 
 _See code: [src/commands/download.ts](https://github.com/JoeffreyChaucer/sfx-aws-connect/blob/v0.1.0/src/commands/download.ts)_
@@ -121,7 +122,7 @@ DESCRIPTION
 EXAMPLES
   $ sf-aws-connect list-instances --region ap-southeast-2 --profile dev
 
-  $ sf-aws-connect list-instances --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY
+  $ sf-aws-connect list-instances --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY  --secretSessionToken YOUR_SESSION_KEY
 ```
 
 _See code: [src/commands/list-instances.ts](https://github.com/JoeffreyChaucer/sfx-aws-connect/blob/v0.1.0/src/commands/list-instances.ts)_

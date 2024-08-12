@@ -12,7 +12,7 @@ export async function downloadSpecificHoursOfOperation({
   instanceId,
   id: hoursOfOperationId,
   outputDir,
-  overrideFile
+  overWrite
 }: TDownloadComponentParams): Promise<string | null> {
   
   if (!connectClient) {
@@ -45,8 +45,8 @@ export async function downloadSpecificHoursOfOperation({
     const fileName: string | undefined = hoursOfOperation.Name;
     const safeOutputDir: string = outputDir ?? './hours-of-operation';
     
-    const jsonFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.json', overrideFile);
-    FileService.writeJsonToFile(jsonFilePath, restructuredData, overrideFile);
+    const jsonFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.json', overWrite);
+    FileService.writeJsonToFile(jsonFilePath, restructuredData, overWrite);
     
     return fileName ?? null;
   } catch (error) {
@@ -70,7 +70,7 @@ export async function downloadAllHoursOfOperation({
   connectClient,
   instanceId, 
   outputDir,
-  overrideFile
+  overWrite
 }: TDownloadComponentParams): Promise<string[]> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
@@ -90,7 +90,7 @@ export async function downloadAllHoursOfOperation({
       connectClient,
       instanceId,
       outputDir,
-      overrideFile,
+      overWrite,
       id: summary.Id!,
     }).catch(() => null)
   );   

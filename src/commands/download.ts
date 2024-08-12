@@ -14,7 +14,7 @@ export default class download extends Command {
     static description: string = 'Download aws components from AWS Connect instance';
     static override examples: string[] = [
       '$ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queues --outputPath ./downloads --region ap-southeast-2 --profile dev',
-      '$ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queues:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY'
+      '$ sf-aws-connect download --instanceId 12345678-1234-1234-1234-123456789012 --componentType queues:abcdef-1234-5678-90ab-cdef12345678 --outputPath ./downloads --region ap-southeast-2 --accessKeyId YOUR_ACCESS_KEY --secretAccessKey YOUR_SECRET_KEY --secretSessionToken YOUR_SESSION_KEY'
     ]
     
   static override flags = {
@@ -25,7 +25,7 @@ export default class download extends Command {
     }),
     componentType: Flags.string({
       char: 'c',
-      description: 'Component type to download. Use "ComponentType" for all, or "ComponentType:Id" for a single component. Valid types: hoursOfOperation, queues, prompts, contactFlows, routingProfiles, lambdaFunctions',
+      description: 'Component type to download. Use "ComponentType" for all, or "ComponentType:Id" for a single component. Valid types: hoursOfOperation, queues, prompts, contactFlows, routingProfiles, agentStatus, lambdaFunctions',
       required: true,
     }),
     outputDir: Flags.string({
@@ -44,10 +44,10 @@ export default class download extends Command {
       default: 'ap-southeast-2',
       required: true
     }),
-    overrideFile: Flags.boolean({
-      description: 'Override existing files',
+    overWrite: Flags.boolean({
+      description: 'overWrite existing components',
       default: true,
-      allowNo: true, // This allows --no-overrideFile to be used to set it to false
+      allowNo: true, // This allows --no-overWrite to be used to set it to false
     }),
     accessKeyId: Flags.string({
       char: 'k',
@@ -83,7 +83,7 @@ export default class download extends Command {
       download: flags.download,
       instanceId: flags.instanceId,
       outputDir:flags.outputDir,
-      overrideFile:flags.overrideFile
+      overWrite:flags.overWrite
     };
     
     const isAuthValid =
@@ -127,7 +127,7 @@ export default class download extends Command {
           componentType: baseType as TComponentType,
           id,
           outputDir: config.outputDir,
-          overrideFile: config.overrideFile
+          overWrite: config.overWrite
         })
         : this.downloadAllComponents({
           connectClient,
@@ -135,7 +135,7 @@ export default class download extends Command {
           instanceId: config.instanceId,
           componentType: baseType as TComponentType,
           outputDir: config.outputDir,
-          overrideFile: config.overrideFile
+          overWrite: config.overWrite
         })
       );
       
@@ -156,14 +156,14 @@ export default class download extends Command {
     instanceId,
     componentType,
     outputDir,
-    overrideFile
+    overWrite
   }: TDownloadComponentParams): Promise<void> {
 
     const config: TDownloadComponentParams={
       connectClient,
       instanceId,
       outputDir, 
-      overrideFile
+      overWrite
     }
     let downloadedFiles: string[];
     switch (componentType) {
@@ -203,7 +203,7 @@ export default class download extends Command {
           lambdaClient,
           instanceId,
           outputDir,
-          overrideFile
+          overWrite
         });
         break;
       }
@@ -229,7 +229,7 @@ export default class download extends Command {
     componentType,
     id,
     outputDir,
-    overrideFile
+    overWrite
   }: TDownloadComponentParams): Promise<void> {
 
     const config: TDownloadComponentParams={
@@ -237,7 +237,7 @@ export default class download extends Command {
       instanceId,
       id,
       outputDir, 
-      overrideFile,
+      overWrite,
     }
     
     let fileName: string | null;
@@ -278,7 +278,7 @@ export default class download extends Command {
           lambdaClient,
           id,
           outputDir,
-          overrideFile
+          overWrite
         });
         break;
       }

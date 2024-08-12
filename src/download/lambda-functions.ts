@@ -15,7 +15,7 @@ export async function downloadSpecificLambdaFunction({
   lambdaClient,
   id: funcArn,
   outputDir,
-  overrideFile,
+  overWrite,
 }: TDownloadComponentParams): Promise<string | null> {
   if (!lambdaClient) {
     throw new Error('LambdaClient is not provided');
@@ -61,8 +61,8 @@ export async function downloadSpecificLambdaFunction({
     const fileName: string = lambdaFunctions.Configuration?.FunctionName ?? 'unknown-lambda';
     const safeOutputDir: string = outputDir ?? './lambda-functions';
     
-    const jsonFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.json', overrideFile);
-    FileService.writeJsonToFile(jsonFilePath, restructuredData, overrideFile)
+    const jsonFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.json', overWrite);
+    FileService.writeJsonToFile(jsonFilePath, restructuredData, overWrite)
     
     const presignedUrl: string | undefined = lambdaFunctions.Code?.Location;
   
@@ -76,10 +76,10 @@ export async function downloadSpecificLambdaFunction({
       responseType: 'arraybuffer'
     });
   
-    const zipFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.zip', overrideFile);
-    const savedFileName = FileService.writeBinaryToFile(zipFilePath, response.data, overrideFile);
+    const zipFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.zip', overWrite);
+    const savedFileName = FileService.writeBinaryToFile(zipFilePath, response.data, overWrite);
 
-    const zipExtractFilePath: string = FileService.getFileName(safeOutputDir, fileName, '', overrideFile);
+    const zipExtractFilePath: string = FileService.getFileName(safeOutputDir, fileName, '', overWrite);
     FileService.createDirectory(zipExtractFilePath);
     
     FileService.extractZipAndCleanup(zipFilePath, zipExtractFilePath);
@@ -101,14 +101,12 @@ export async function downloadSpecificLambdaFunction({
   
 }
 
-
-
-  export async function downloadAllLambdaFunctions({
+export async function downloadAllLambdaFunctions({
     connectClient,
     lambdaClient,
     instanceId, 
     outputDir,
-    overrideFile
+    overWrite
   }:TDownloadComponentParams): Promise<string[]> {
     if (!connectClient) {
       throw new Error('ConnectClient is not provided');
@@ -130,7 +128,7 @@ export async function downloadSpecificLambdaFunction({
         lambdaClient,
         instanceId,
         outputDir,
-        overrideFile,
+        overWrite,
         id: functionName,
       }).catch(() => null)
     );

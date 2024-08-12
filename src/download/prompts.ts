@@ -13,7 +13,7 @@ export async function downloadSpecificPrompt({
   instanceId,
   id: promptId,
   outputDir,
-  overrideFile
+  overWrite
 }: TDownloadComponentParams): Promise<string | null> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
@@ -43,8 +43,8 @@ export async function downloadSpecificPrompt({
     const fileName: string | undefined = prompt.Name;
     const safeOutputDir: string = outputDir ?? './prompts';
     
-    const jsonFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.json', overrideFile);
-    FileService.writeJsonToFile(jsonFilePath, restructuredData, overrideFile)
+    const jsonFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.json', overWrite);
+    FileService.writeJsonToFile(jsonFilePath, restructuredData, overWrite)
     
     const getPromptResponse: GetPromptFileCommandOutput = await connectClient.send(new GetPromptFileCommand({
       InstanceId: instanceId,
@@ -59,8 +59,8 @@ export async function downloadSpecificPrompt({
       responseType: 'arraybuffer'
     });
 
-    const filePath: string = FileService.getFileName(outputDir, fileName, '.wav', overrideFile);
-    const savedFileName = FileService.writeBinaryToFile(filePath, response.data, overrideFile);
+    const filePath: string = FileService.getFileName(outputDir, fileName, '.wav', overWrite);
+    const savedFileName = FileService.writeBinaryToFile(filePath, response.data, overWrite);
 
     return savedFileName;
   } catch (error) {
@@ -83,7 +83,7 @@ export async function downloadAllPrompts({
   connectClient,
   instanceId, 
   outputDir,
-  overrideFile
+  overWrite
 }: TDownloadComponentParams): Promise<string[]> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
@@ -103,7 +103,7 @@ export async function downloadAllPrompts({
         connectClient,
         instanceId,
         outputDir,
-        overrideFile,
+        overWrite,
         id: summary.Id!,
       }).catch(() => null)
     );

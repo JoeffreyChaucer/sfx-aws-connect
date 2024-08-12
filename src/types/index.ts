@@ -18,7 +18,7 @@ export type TDownloadComponentParams = {
     componentType?: string;
     outputDir?: string;
     id?: string;
-    overrideFile?: boolean;
+    overWrite?: boolean;
     download?: boolean;
   } & TAwsAccessFlags
   

@@ -12,7 +12,7 @@ export async function downloadSpecificAgentStatus({
   instanceId,
   id: agentStatusId,
   outputDir,
-  overrideFile
+  overWrite
 }: TDownloadComponentParams): Promise<string | null> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
@@ -44,8 +44,8 @@ export async function downloadSpecificAgentStatus({
     
     
     const fileName: string | undefined = `${describeResponse.AgentStatus?.Name}`;
-    const filePath = FileService.getFileName(outputDir, fileName, '.json', overrideFile);
-    FileService.writeJsonToFile(filePath, restructuredData, overrideFile);
+    const filePath = FileService.getFileName(outputDir, fileName, '.json', overWrite);
+    FileService.writeJsonToFile(filePath, restructuredData, overWrite);
     
     return fileName ?? null;
     
@@ -68,7 +68,7 @@ export async function downloadAllAgentStatuses({
   connectClient,
   instanceId, 
   outputDir,
-  overrideFile
+  overWrite
 }: TDownloadComponentParams): Promise<string[]> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
@@ -88,7 +88,7 @@ export async function downloadAllAgentStatuses({
         connectClient,
         instanceId,
         outputDir,
-        overrideFile,
+        overWrite,
         id: summary.Id!,
       }).catch(() => null)
     );

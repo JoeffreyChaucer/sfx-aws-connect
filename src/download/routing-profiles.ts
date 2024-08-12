@@ -12,7 +12,7 @@ export async function downloadSpecificRoutingProfile({
   instanceId,
   id: routingProfileId,
   outputDir,
-  overrideFile
+  overWrite
 }: TDownloadComponentParams): Promise<string | null> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
@@ -41,8 +41,8 @@ export async function downloadSpecificRoutingProfile({
     };
     
     const fileName: string | undefined = routingProfile.Name;
-    const filePath = FileService.getFileName(outputDir, fileName, '.json', overrideFile);
-    FileService.writeJsonToFile(filePath, restructuredData, overrideFile);
+    const filePath = FileService.getFileName(outputDir, fileName, '.json', overWrite);
+    FileService.writeJsonToFile(filePath, restructuredData, overWrite);
     
     return fileName ?? null;
     
@@ -66,7 +66,7 @@ export async function downloadAllRoutingProfiles({
   connectClient,
   instanceId, 
   outputDir,
-  overrideFile
+  overWrite
 }: TDownloadComponentParams): Promise<string[]> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
@@ -86,7 +86,7 @@ export async function downloadAllRoutingProfiles({
         connectClient,
         instanceId,
         outputDir,
-        overrideFile,
+        overWrite,
         id: summary.Id!,
       }).catch(() => null)
     );

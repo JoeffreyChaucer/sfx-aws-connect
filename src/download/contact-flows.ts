@@ -12,7 +12,7 @@ export async function downloadSpecificContactFlow({
   instanceId,
   id: contactFlowId,
   outputDir,
-  overrideFile
+  overWrite
 }: TDownloadComponentParams): Promise<string | null> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
@@ -42,8 +42,8 @@ export async function downloadSpecificContactFlow({
     };
     
     const fileName: string | undefined = contactFlow.Name;
-    const filePath: string = FileService.getFileName(outputDir, fileName, '.json', overrideFile);
-    FileService.writeJsonToFile(filePath, restructuredData, overrideFile);
+    const filePath: string = FileService.getFileName(outputDir, fileName, '.json', overWrite);
+    FileService.writeJsonToFile(filePath, restructuredData, overWrite);
     
     return fileName ?? null;
   } catch (error) {
@@ -65,7 +65,7 @@ export async function downloadAllContactFlows({
   connectClient,
   instanceId, 
   outputDir,
-  overrideFile
+  overWrite
 }: TDownloadComponentParams): Promise<string[]> {
   
   if (!connectClient) {
@@ -86,7 +86,7 @@ export async function downloadAllContactFlows({
         connectClient,
         instanceId,
         outputDir,
-        overrideFile,
+        overWrite,
         id: summary.Id!,
       }).catch(() => null)
     );

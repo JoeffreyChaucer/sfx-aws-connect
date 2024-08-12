@@ -12,7 +12,7 @@ export async function downloadSpecificQueue({
   instanceId,
   id: queueId,
   outputDir,
-  overrideFile
+  overWrite
 }: TDownloadComponentParams): Promise<string | null> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
@@ -44,8 +44,8 @@ export async function downloadSpecificQueue({
     };
     
     const fileName = queue.Name ?? 'Unknown_Queue';
-    const filePath = FileService.getFileName(outputDir, fileName, '.json', overrideFile);
-    FileService.writeJsonToFile(filePath, restructuredData, overrideFile);
+    const filePath = FileService.getFileName(outputDir, fileName, '.json', overWrite);
+    FileService.writeJsonToFile(filePath, restructuredData, overWrite);
     
     return fileName ?? null;
   } catch (error) {
@@ -68,7 +68,7 @@ export async function downloadAllQueues({
   connectClient,
   instanceId, 
   outputDir,
-  overrideFile
+  overWrite
 }: TDownloadComponentParams): Promise<string[]> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
@@ -88,7 +88,7 @@ export async function downloadAllQueues({
         connectClient,
         instanceId,
         outputDir,
-        overrideFile,
+        overWrite,
         id: summary.Id!,
       }).catch(() => null)
     );
