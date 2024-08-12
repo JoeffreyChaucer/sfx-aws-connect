@@ -1,11 +1,12 @@
-import { AccessDeniedException, ContactFlow, DescribeContactFlowCommand, DescribeContactFlowCommandOutput, ListContactFlowsCommand, ListContactFlowsCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
+import { AccessDeniedException, DescribeContactFlowCommand, DescribeContactFlowCommandOutput, ContactFlow as IContactFlow, ListContactFlowsCommand, ListContactFlowsCommandOutput, ResourceNotFoundException, } from "@aws-sdk/client-connect";
+import path from "node:path";
 
-import { FileService } from '../services/file-service.js';
+import { AwsComponentData, AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
 import { TDownloadComponentParams } from '../types/index.js';
 
-type TContactFlow = {
-  ContactFlow?: ContactFlow,
-};
+interface ContactFlow extends AwsComponentData {
+  ContactFlow: IContactFlow;
+}
 
 export async function downloadSpecificContactFlow({
   connectClient,
@@ -18,16 +19,20 @@ export async function downloadSpecificContactFlow({
     throw new Error('ConnectClient is not provided');
   }
   
+  const writer = new AwsComponentFileWriter<ContactFlow>();
+  const defaultOutputDir = path.join(process.cwd(), 'contactFlows');
+  const safeOutputDir = outputDir || defaultOutputDir;
+  
   try {
     const describeResponse: DescribeContactFlowCommandOutput = await connectClient.send(new DescribeContactFlowCommand({
       InstanceId: instanceId,
       ContactFlowId: contactFlowId
     }));
 
-    const contactFlow: ContactFlow | undefined = describeResponse.ContactFlow;
+    const contactFlow: IContactFlow | undefined = describeResponse.ContactFlow;
     if (!contactFlow) return null;
     
-    const restructuredData: TContactFlow = {
+    const restructuredData: ContactFlow = {
       ContactFlow: {
         Name: contactFlow.Name,
         Arn: contactFlow.Arn,
@@ -42,8 +47,7 @@ export async function downloadSpecificContactFlow({
     };
     
     const fileName: string | undefined = contactFlow.Name;
-    const filePath: string = FileService.getFileName(outputDir, fileName, '.json', overWrite);
-    FileService.writeJsonToFile(filePath, restructuredData, overWrite);
+    await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
     
     return fileName ?? null;
   } catch (error) {

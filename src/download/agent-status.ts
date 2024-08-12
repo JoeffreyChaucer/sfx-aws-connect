@@ -1,11 +1,13 @@
-import { AccessDeniedException, AgentStatus, DescribeAgentStatusCommand, DescribeAgentStatusCommandOutput, ListAgentStatusesCommand, ListAgentStatusesCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
+import { AccessDeniedException, DescribeAgentStatusCommand, DescribeAgentStatusCommandOutput,  AgentStatus as IAgentStatus, ListAgentStatusesCommand, ListAgentStatusesCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
+import path from "node:path";
 
-import { FileService } from '../services/file-service.js';
+import { AwsComponentData, AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
 import { TDownloadComponentParams } from '../types/index.js';
 
-type TAgentStatus = {
-  AgentStatus?: AgentStatus,
-};
+
+interface AgentStatus extends AwsComponentData {
+  AgentStatus: IAgentStatus;
+}
 
 export async function downloadSpecificAgentStatus({
   connectClient,
@@ -17,17 +19,21 @@ export async function downloadSpecificAgentStatus({
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
   }
- 
+
+  const writer = new AwsComponentFileWriter<AgentStatus>();
+  const defaultOutputDir = path.join(process.cwd(), 'agentStatuses');
+  const safeOutputDir = outputDir || defaultOutputDir;
+  
   try {
     const describeResponse: DescribeAgentStatusCommandOutput = await connectClient.send(new DescribeAgentStatusCommand({
       InstanceId: instanceId,
       AgentStatusId: agentStatusId
     }));
     
-    const agentStatus: AgentStatus | undefined = describeResponse.AgentStatus;
+    const agentStatus: IAgentStatus | undefined = describeResponse.AgentStatus;
     if (!agentStatus) return null;
     
-    const restructuredData: TAgentStatus = {
+    const restructuredData: AgentStatus = {
       AgentStatus: {
         AgentStatusARN: agentStatus.AgentStatusARN,
         AgentStatusId: agentStatus.AgentStatusId,
@@ -42,10 +48,8 @@ export async function downloadSpecificAgentStatus({
       }
     };
     
-    
     const fileName: string | undefined = `${describeResponse.AgentStatus?.Name}`;
-    const filePath = FileService.getFileName(outputDir, fileName, '.json', overWrite);
-    FileService.writeJsonToFile(filePath, restructuredData, overWrite);
+    await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
     
     return fileName ?? null;
     

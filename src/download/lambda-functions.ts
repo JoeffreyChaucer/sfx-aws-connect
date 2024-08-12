@@ -1,8 +1,9 @@
 import { AccessDeniedException, ListLambdaFunctionsCommand, ListLambdaFunctionsCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
 import { GetFunctionCommand, GetFunctionCommandOutput } from "@aws-sdk/client-lambda";
 import axios, { AxiosResponse } from "axios";
+import path from "node:path";
 
-import { FileService } from "../services/file-service.js";
+import { AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
 import { TDownloadComponentParams, TLambdaFunction } from '../types/index.js';
 
   
@@ -20,6 +21,10 @@ export async function downloadSpecificLambdaFunction({
   if (!lambdaClient) {
     throw new Error('LambdaClient is not provided');
   }
+  
+  const writer = new AwsComponentFileWriter<TLambda>();
+  const defaultOutputDir = path.join(process.cwd(), 'lambdaFunctions');
+  const safeOutputDir = outputDir || defaultOutputDir;
 
   try {
     const lambdaFunctions: GetFunctionCommandOutput = await lambdaClient.send(new GetFunctionCommand({ FunctionName: funcArn }));
@@ -59,16 +64,13 @@ export async function downloadSpecificLambdaFunction({
     };
     
     const fileName: string = lambdaFunctions.Configuration?.FunctionName ?? 'unknown-lambda';
-    const safeOutputDir: string = outputDir ?? './lambda-functions';
-    
-    const jsonFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.json', overWrite);
-    FileService.writeJsonToFile(jsonFilePath, restructuredData, overWrite)
+    await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
     
     const presignedUrl: string | undefined = lambdaFunctions.Code?.Location;
   
     if (!presignedUrl) {
-      return null;
-    }
+      throw new Error("No presigned URL found. Cannot download the ZIP file.");
+    }    
     
     const response: AxiosResponse = await axios({
       method: 'get',
@@ -76,15 +78,9 @@ export async function downloadSpecificLambdaFunction({
       responseType: 'arraybuffer'
     });
   
-    const zipFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.zip', overWrite);
-    const savedFileName = FileService.writeBinaryToFile(zipFilePath, response.data, overWrite);
+    await writer.extractAndCleanupZip(Buffer.from(response.data), safeOutputDir, fileName, overWrite ?? false);
 
-    const zipExtractFilePath: string = FileService.getFileName(safeOutputDir, fileName, '', overWrite);
-    FileService.createDirectory(zipExtractFilePath);
-    
-    FileService.extractZipAndCleanup(zipFilePath, zipExtractFilePath);
-    
-    return savedFileName;    
+    return fileName;    
   } catch(error){
     if (error instanceof ResourceNotFoundException) {
       console.warn(`Lambda Function with FunctionName: ${funcArn} not found in these Instance. Please check you Instance Id.`);

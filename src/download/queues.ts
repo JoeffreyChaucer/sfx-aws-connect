@@ -1,11 +1,12 @@
-import { AccessDeniedException, Queue as AwsQueue, DescribeQueueCommand, ListQueuesCommand, ListQueuesCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
+import { AccessDeniedException, Queue as AwsQueue, DescribeQueueCommand, ListQueuesCommand, ListQueuesCommandOutput, QueueSummary, ResourceNotFoundException } from "@aws-sdk/client-connect";
+import path from "node:path";
 
-import { FileService } from '../services/file-service.js';
+import { AwsComponentData, AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
 import { TDownloadComponentParams } from '../types/index.js';
 
-type QueueResponse = {
-  Queue?: AwsQueue,
-};
+interface Queue extends AwsComponentData {
+  Queue: AwsQueue;
+}
 
 export async function downloadSpecificQueue({
   connectClient,
@@ -17,17 +18,21 @@ export async function downloadSpecificQueue({
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
   }
-
+  
+  const writer = new AwsComponentFileWriter<Queue>();
+  const defaultOutputDir = path.join(process.cwd(), 'queues');
+  const safeOutputDir = outputDir || defaultOutputDir;
+  
   try {
     const describeResponse = await connectClient.send(new DescribeQueueCommand({
       InstanceId: instanceId,
       QueueId: queueId
     }));
 
-    const queue = describeResponse.Queue;
+    const queue: AwsQueue | undefined = describeResponse.Queue;
     if (!queue) return null;
 
-    const restructuredData: QueueResponse = {
+    const restructuredData: Queue = {
       Queue: {
         Name: queue.Name,
         QueueArn: queue.QueueArn,
@@ -44,9 +49,8 @@ export async function downloadSpecificQueue({
     };
     
     const fileName = queue.Name ?? 'Unknown_Queue';
-    const filePath = FileService.getFileName(outputDir, fileName, '.json', overWrite);
-    FileService.writeJsonToFile(filePath, restructuredData, overWrite);
-    
+    await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
+
     return fileName ?? null;
   } catch (error) {
     
@@ -76,12 +80,14 @@ export async function downloadAllQueues({
 
   const listResponse: ListQueuesCommandOutput = await connectClient.send(new ListQueuesCommand({ InstanceId: instanceId }));
 
-  if (!listResponse.QueueSummaryList || listResponse.QueueSummaryList.length === 0) {
+  const queues: QueueSummary[] | undefined = listResponse.QueueSummaryList;
+
+  if (!queues || queues.length === 0) {
     console.warn('No Queues found for this Connect instance.');
     return [];
   }
 
-  const downloadPromises = listResponse.QueueSummaryList
+  const downloadPromises = queues
     .filter(summary => summary.Id)
     .map(summary => 
       downloadSpecificQueue({

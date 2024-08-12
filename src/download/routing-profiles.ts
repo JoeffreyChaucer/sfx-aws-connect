@@ -1,10 +1,11 @@
-import { AccessDeniedException, DescribeRoutingProfileCommand, DescribeRoutingProfileCommandOutput, ListRoutingProfilesCommand, ListRoutingProfilesCommandOutput, ResourceNotFoundException, RoutingProfile } from "@aws-sdk/client-connect";
+import { AccessDeniedException, DescribeRoutingProfileCommand, DescribeRoutingProfileCommandOutput, RoutingProfile as IRoutingProfile, ListRoutingProfilesCommand, ListRoutingProfilesCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
+import path from "node:path";
 
-import { FileService } from '../services/file-service.js';
+import { AwsComponentData, AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
 import { TDownloadComponentParams } from '../types/index.js';
 
-type TRoutingProfile = {
-  RoutingProfile?: RoutingProfile,
+interface RoutingProfile extends AwsComponentData {
+  RoutingProfile: IRoutingProfile,
 };
 
 export async function downloadSpecificRoutingProfile({
@@ -17,6 +18,10 @@ export async function downloadSpecificRoutingProfile({
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
   }
+  
+  const writer = new AwsComponentFileWriter<RoutingProfile>();
+  const defaultOutputDir = path.join(process.cwd(), 'agentStatuses');
+  const safeOutputDir = outputDir || defaultOutputDir;
  
   try {
     const describeResponse: DescribeRoutingProfileCommandOutput = await connectClient.send(new DescribeRoutingProfileCommand({
@@ -24,11 +29,11 @@ export async function downloadSpecificRoutingProfile({
       RoutingProfileId: routingProfileId
     }));
     
-    const routingProfile: RoutingProfile | undefined = describeResponse.RoutingProfile;
+    const routingProfile: IRoutingProfile | undefined = describeResponse.RoutingProfile;
     if (!routingProfile) return null;
     
     
-    const restructuredData: TRoutingProfile = {
+    const restructuredData: RoutingProfile = {
       RoutingProfile: {
         Name: routingProfile.Name,
         RoutingProfileArn: routingProfile.RoutingProfileArn,
@@ -41,8 +46,7 @@ export async function downloadSpecificRoutingProfile({
     };
     
     const fileName: string | undefined = routingProfile.Name;
-    const filePath = FileService.getFileName(outputDir, fileName, '.json', overWrite);
-    FileService.writeJsonToFile(filePath, restructuredData, overWrite);
+    await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
     
     return fileName ?? null;
     

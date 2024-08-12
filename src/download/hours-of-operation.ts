@@ -1,10 +1,11 @@
-import { AccessDeniedException, DescribeHoursOfOperationCommand, DescribeHoursOfOperationCommandOutput, ListHoursOfOperationsCommand, ListHoursOfOperationsCommandOutput, ResourceNotFoundException, HoursOfOperation as TAWSHoursOfOperation } from "@aws-sdk/client-connect";
+import { AccessDeniedException, DescribeHoursOfOperationCommand, DescribeHoursOfOperationCommandOutput, HoursOfOperation as IHoursOfOperation, ListHoursOfOperationsCommand, ListHoursOfOperationsCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
+import path from "node:path";
 
-import { FileService } from '../services/file-service.js';
+import { AwsComponentData, AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
 import { TDownloadComponentParams } from '../types/index.js';
 
-type THoursOfOperation = {
-  HoursOfOperation?: TAWSHoursOfOperation,
+interface HoursOfOperation extends AwsComponentData {
+  HoursOfOperation: IHoursOfOperation;
 };
 
 export async function downloadSpecificHoursOfOperation({
@@ -18,6 +19,10 @@ export async function downloadSpecificHoursOfOperation({
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
   }
+  
+  const writer = new AwsComponentFileWriter<HoursOfOperation>();
+  const defaultOutputDir = path.join(process.cwd(), 'hoursOfOperation');
+  const safeOutputDir = outputDir || defaultOutputDir;
 
   try {
     const describeResponse: DescribeHoursOfOperationCommandOutput = await connectClient.send(new DescribeHoursOfOperationCommand({
@@ -25,10 +30,10 @@ export async function downloadSpecificHoursOfOperation({
       HoursOfOperationId: hoursOfOperationId
     }));
   
-    const hoursOfOperation: TAWSHoursOfOperation | undefined = describeResponse.HoursOfOperation;
+    const hoursOfOperation: IHoursOfOperation | undefined = describeResponse.HoursOfOperation;
     if (!hoursOfOperation) return null;
     
-    const restructuredData: THoursOfOperation = {
+    const restructuredData: HoursOfOperation = {
       HoursOfOperation: {
         HoursOfOperationId: hoursOfOperation.HoursOfOperationId,
         HoursOfOperationArn: hoursOfOperation.HoursOfOperationArn,
@@ -43,10 +48,7 @@ export async function downloadSpecificHoursOfOperation({
     };
     
     const fileName: string | undefined = hoursOfOperation.Name;
-    const safeOutputDir: string = outputDir ?? './hours-of-operation';
-    
-    const jsonFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.json', overWrite);
-    FileService.writeJsonToFile(jsonFilePath, restructuredData, overWrite);
+    await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
     
     return fileName ?? null;
   } catch (error) {

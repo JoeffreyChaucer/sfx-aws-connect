@@ -1,12 +1,14 @@
-import { AccessDeniedException, DescribePromptCommand, DescribePromptCommandOutput, GetPromptFileCommand, GetPromptFileCommandOutput, ListPromptsCommand, ListPromptsCommandOutput, Prompt, ResourceNotFoundException } from "@aws-sdk/client-connect";
+import { AccessDeniedException, DescribePromptCommand, DescribePromptCommandOutput, GetPromptFileCommand, GetPromptFileCommandOutput, Prompt as IPrompt, ListPromptsCommand, ListPromptsCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
 import axios, { AxiosResponse } from 'axios';
+import path from "node:path";
 
-import { FileService } from '../services/file-service.js';
+import { AwsComponentData, AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
 import { TDownloadComponentParams } from '../types/index.js';
 
-type TPrompt = {
-  Prompt?: Prompt
-};
+interface Prompt extends AwsComponentData {
+  Prompt: IPrompt;
+}
+
 
 export async function downloadSpecificPrompt({
   connectClient,
@@ -18,6 +20,10 @@ export async function downloadSpecificPrompt({
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
   }
+  
+  const writer = new AwsComponentFileWriter<Prompt>();
+  const defaultOutputDir = path.join(process.cwd(), 'prompts');
+  const safeOutputDir = outputDir || defaultOutputDir;
 
   try {
     const describeResponse: DescribePromptCommandOutput = await connectClient.send(new DescribePromptCommand({
@@ -25,10 +31,10 @@ export async function downloadSpecificPrompt({
       PromptId: promptId
     }));
 
-    const prompt: Prompt | undefined = describeResponse.Prompt;
+    const prompt: IPrompt | undefined = describeResponse.Prompt;
     if (!prompt) return null;
     
-    const restructuredData: TPrompt = {
+    const restructuredData: Prompt = {
       Prompt: {
         Name: prompt.Name,
         PromptId: prompt.PromptId,
@@ -40,11 +46,12 @@ export async function downloadSpecificPrompt({
       }
     };
 
-    const fileName: string | undefined = prompt.Name;
-    const safeOutputDir: string = outputDir ?? './prompts';
-    
-    const jsonFilePath: string = FileService.getFileName(safeOutputDir, fileName, '.json', overWrite);
-    FileService.writeJsonToFile(jsonFilePath, restructuredData, overWrite)
+    if(!prompt.Name){
+      return null;
+    }
+
+    const fileName: string = prompt.Name;
+    await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
     
     const getPromptResponse: GetPromptFileCommandOutput = await connectClient.send(new GetPromptFileCommand({
       InstanceId: instanceId,
@@ -59,10 +66,11 @@ export async function downloadSpecificPrompt({
       responseType: 'arraybuffer'
     });
 
-    const filePath: string = FileService.getFileName(outputDir, fileName, '.wav', overWrite);
-    const savedFileName = FileService.writeBinaryToFile(filePath, response.data, overWrite);
 
-    return savedFileName;
+    await writer.writeBinaryFile(safeOutputDir, fileName, Buffer.from(response.data), overWrite ?? false);
+
+
+    return fileName ?? null;
   } catch (error) {
     
     if (error instanceof ResourceNotFoundException) {
