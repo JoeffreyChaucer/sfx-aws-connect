@@ -12,6 +12,7 @@ export async function downloadSpecificRoutingProfile({
   connectClient,
   instanceId,
   id: routingProfileId,
+  componentType,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string | null> {
@@ -19,9 +20,16 @@ export async function downloadSpecificRoutingProfile({
     throw new Error('ConnectClient is not provided');
   }
   
+  let safeOutputDir: string;
+  
   const writer = new AwsComponentFileWriter<RoutingProfile>();
-  const defaultOutputDir = path.join(process.cwd(), 'routingProfiles');
-  const safeOutputDir = outputDir || defaultOutputDir;
+
+  if (componentType === 'all') {
+    safeOutputDir = path.join(outputDir || process.cwd(), 'routingProfiles');
+  } else {
+    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'routingProfiles');
+    safeOutputDir = outputDir || defaultOutputDir;
+  }
  
   try {
     const describeResponse: DescribeRoutingProfileCommandOutput = await connectClient.send(new DescribeRoutingProfileCommand({

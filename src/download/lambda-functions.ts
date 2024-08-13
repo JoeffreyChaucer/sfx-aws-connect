@@ -15,6 +15,7 @@ type TLambda = {
 export async function downloadSpecificLambdaFunction({
   lambdaClient,
   id: funcArn,
+  componentType,
   outputDir,
   overWrite,
 }: TDownloadComponentParams): Promise<string | null> {
@@ -22,9 +23,16 @@ export async function downloadSpecificLambdaFunction({
     throw new Error('LambdaClient is not provided');
   }
   
+  let safeOutputDir: string;
+  
   const writer = new AwsComponentFileWriter<TLambda>();
-  const defaultOutputDir = path.join(process.cwd(), 'lambdaFunctions');
-  const safeOutputDir = outputDir || defaultOutputDir;
+
+  if (componentType === 'all') {
+    safeOutputDir = path.join(outputDir || process.cwd(), 'lambdaFunctions');
+  } else {
+    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'lambdaFunctions');
+    safeOutputDir = outputDir || defaultOutputDir;
+  }
 
   try {
     const lambdaFunctions: GetFunctionCommandOutput = await lambdaClient.send(new GetFunctionCommand({ FunctionName: funcArn }));
@@ -81,7 +89,7 @@ export async function downloadSpecificLambdaFunction({
     await writer.extractAndCleanupZip(Buffer.from(response.data), safeOutputDir, fileName, overWrite ?? false);
 
     return fileName!;    
-  } catch(error){
+  } catch(error: any){
     if (error instanceof ResourceNotFoundException) {
       console.warn(`Lambda Function with FunctionName: ${funcArn} not found in these Instance. Please check you Instance Id.`);
     } else if (error instanceof Error && error.message.includes('Invalid parameter')) {
@@ -89,7 +97,7 @@ export async function downloadSpecificLambdaFunction({
     } else if (error instanceof AccessDeniedException) {
       console.error(`Access denied: You don't have permission to access Lambda Function ${funcArn}.`);
     } else {
-      console.error(`Unexpected error downloading Lambda Function ${funcArn}:`, error);
+      console.error(`Unexpected error downloading Lambda Function ${funcArn}:`, error.message);
     }
     
     return null

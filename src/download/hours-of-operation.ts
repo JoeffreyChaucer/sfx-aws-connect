@@ -11,6 +11,7 @@ interface HoursOfOperation extends AwsComponentData {
 export async function downloadSpecificHoursOfOperation({
   connectClient,
   instanceId,
+  componentType,
   id: hoursOfOperationId,
   outputDir,
   overWrite
@@ -20,9 +21,16 @@ export async function downloadSpecificHoursOfOperation({
     throw new Error('ConnectClient is not provided');
   }
   
+  let safeOutputDir: string;
+  
   const writer = new AwsComponentFileWriter<HoursOfOperation>();
-  const defaultOutputDir = path.join(process.cwd(), 'hoursOfOperation');
-  const safeOutputDir = outputDir || defaultOutputDir;
+
+  if (componentType === 'all') {
+    safeOutputDir = path.join(outputDir || process.cwd(), 'hoursOfOperation');
+  } else {
+    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'hoursOfOperation');
+    safeOutputDir = outputDir || defaultOutputDir;
+  }
 
   try {
     const describeResponse: DescribeHoursOfOperationCommandOutput = await connectClient.send(new DescribeHoursOfOperationCommand({
@@ -51,7 +59,7 @@ export async function downloadSpecificHoursOfOperation({
     await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
     
     return fileName ?? null;
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof ResourceNotFoundException) {
       console.warn(`Hours of operation with ID ${hoursOfOperationId} not found. It may have been deleted.`);
     } else if (error instanceof Error && error.message.includes('Invalid parameter')) {
@@ -59,7 +67,7 @@ export async function downloadSpecificHoursOfOperation({
     } else if (error instanceof AccessDeniedException) {
       console.error(`Access denied: You don't have permission to access Hours of operation ${hoursOfOperationId}.`);
     } else {
-      console.error(`Unexpected error downloading Hours of operation ${hoursOfOperationId}:`, error);
+      console.error(`Unexpected error downloading Hours of operation ${hoursOfOperationId}:`, error.mess);
     }
 
     return null;

@@ -23,7 +23,7 @@ export type TDownloadComponentParams = {
   } & TAwsAccessFlags
   
   
-export type TComponentType = 'hoursOfOperation' | 'queues' | 'prompts' | 'contactFlows' | 'routingProfiles' | 'agentStatus' | 'lambdaFunctions';
+export type TComponentType = 'all' | 'hoursOfOperation' | 'queues' | 'prompts' | 'contactFlows' | 'routingProfiles' | 'agentStatus' | 'lambdaFunctions';
 
 export type EnvironmentVariables = {
   [key: string]: string | undefined;

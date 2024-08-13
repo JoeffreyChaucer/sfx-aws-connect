@@ -12,6 +12,7 @@ export async function downloadSpecificQueue({
   connectClient,
   instanceId,
   id: queueId,
+  componentType,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string | null> {
@@ -19,9 +20,16 @@ export async function downloadSpecificQueue({
     throw new Error('ConnectClient is not provided');
   }
   
+  let safeOutputDir: string;
+  
   const writer = new AwsComponentFileWriter<Queue>();
-  const defaultOutputDir = path.join(process.cwd(), 'queues');
-  const safeOutputDir = outputDir || defaultOutputDir;
+  
+  if (componentType === 'all') {
+    safeOutputDir = path.join(outputDir || process.cwd(), 'queues');
+  } else {
+    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'queues');
+    safeOutputDir = outputDir || defaultOutputDir;
+  }
   
   try {
     const describeResponse = await connectClient.send(new DescribeQueueCommand({
@@ -52,7 +60,7 @@ export async function downloadSpecificQueue({
     await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
 
     return fileName ?? null;
-  } catch (error) {
+  } catch (error: any) {
     
     if (error instanceof ResourceNotFoundException) {
       console.warn(`Queue with ID ${queueId} not found. It may have been deleted.`);
@@ -61,7 +69,7 @@ export async function downloadSpecificQueue({
     } else if (error instanceof AccessDeniedException) {
       console.error(`Access denied: You don't have permission to access queue ${queueId}.`);
     } else {
-      console.error(`Unexpected error downloading queue ${queueId}:`, error);
+      console.error(`Unexpected error downloading queue ${queueId}:`, error.message);
     }
 
     return null;

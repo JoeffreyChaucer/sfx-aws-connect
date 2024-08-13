@@ -1,5 +1,6 @@
 import { AccessDeniedException, DescribePromptCommand, DescribePromptCommandOutput, GetPromptFileCommand, GetPromptFileCommandOutput, Prompt as IPrompt, ListPromptsCommand, ListPromptsCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
 import axios, { AxiosResponse } from 'axios';
+import axiosRetry from 'axios-retry';
 import path from "node:path";
 
 import { AwsComponentData, AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
@@ -10,10 +11,12 @@ interface Prompt extends AwsComponentData {
 }
 
 
+
 export async function downloadSpecificPrompt({
   connectClient,
   instanceId,
   id: promptId,
+  componentType,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string | null> {
@@ -21,9 +24,16 @@ export async function downloadSpecificPrompt({
     throw new Error('ConnectClient is not provided');
   }
   
+  let safeOutputDir: string;
+  
   const writer = new AwsComponentFileWriter<Prompt>();
-  const defaultOutputDir = path.join(process.cwd(), 'prompts');
-  const safeOutputDir = outputDir || defaultOutputDir;
+
+  if (componentType === 'all') {
+    safeOutputDir = path.join(outputDir || process.cwd(), 'hoursOfOperation');
+  } else {
+    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'hoursOfOperation');
+    safeOutputDir = outputDir || defaultOutputDir;
+  }
 
   try {
     const describeResponse: DescribePromptCommandOutput = await connectClient.send(new DescribePromptCommand({
@@ -60,18 +70,19 @@ export async function downloadSpecificPrompt({
     
     const presignedUrl: string | undefined = getPromptResponse.PromptPresignedUrl;
 
+    if(!presignedUrl) return null
+    
     const response: AxiosResponse = await axios({
       method: 'get',
       url: presignedUrl,
       responseType: 'arraybuffer'
     });
-
-
-    await writer.writeBinaryFile(safeOutputDir, fileName, Buffer.from(response.data), overWrite ?? false);
+    
+    await writer.writeBinaryFile(safeOutputDir, fileName,  Buffer.from(response.data), overWrite ?? false);
 
 
     return fileName ?? null;
-  } catch (error) {
+  } catch (error: any) {
     
     if (error instanceof ResourceNotFoundException) {
       console.warn(`Prompt with ID ${promptId} not found. It may have been deleted.`);
@@ -80,7 +91,7 @@ export async function downloadSpecificPrompt({
     } else if (error instanceof AccessDeniedException) {
       console.error(`Access denied: You don't have permission to access prompt ${promptId}.`);
     } else {
-      console.error(`Unexpected error downloading prompt ${promptId}:`, error);
+      console.error(`Unexpected error downloading prompt ${promptId}:`, error.message);
     }
 
     return null

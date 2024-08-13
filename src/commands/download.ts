@@ -25,13 +25,12 @@ export default class download extends Command {
     }),
     componentType: Flags.string({
       char: 'c',
-      description: 'Component type to download. Use "ComponentType" for all, or "ComponentType:Id" for a single component. Valid types: hoursOfOperation, queues, prompts, contactFlows, routingProfiles, agentStatus, lambdaFunctions',
+      description: 'Component type to download. Use "ComponentType" for all, or "ComponentType:Id" for a single component. Valid types: all, hoursOfOperation, queues, prompts, contactFlows, routingProfiles, agentStatus, lambdaFunctions',
       required: true,
     }),
     outputDir: Flags.string({
       char: 'o',
       description: 'Output path for the downloaded component(s)',
-      required: true,
     }),
     profile: Flags.string({
       char: 'p',
@@ -109,12 +108,19 @@ export default class download extends Command {
       }
 
       const [baseType, id] = config.componentType.split(':');
-      const validTypes: TComponentType[] = ['hoursOfOperation', 'queues', 'prompts', 'contactFlows', 'routingProfiles', 'agentStatus', 'lambdaFunctions'];
+      const validTypes: TComponentType[] = ['all', 'hoursOfOperation', 'queues', 'prompts', 'contactFlows', 'routingProfiles', 'agentStatus', 'lambdaFunctions'];
       
       if (!validTypes.includes(baseType as TComponentType)) {
         this.error(
           `Unsupported component type: ${baseType}\n` +
           `Valid types are: ${validTypes.join(', ')}`,
+          { exit: 1 }
+        );
+      }
+
+      if (baseType !== 'all' && !config.outputDir) {
+        this.error(
+          `Output directory (--outputDir) is required when componentType is not 'all'`,
           { exit: 1 }
         );
       }
@@ -167,6 +173,31 @@ export default class download extends Command {
     }
     let downloadedFiles: string[];
     switch (componentType) {
+      
+      case 'all': {
+        const downloadPromises = [
+          downloadAllHoursOfOperation(config),
+          downloadAllQueues(config),
+          downloadAllContactFlows(config),
+          downloadAllPrompts(config),
+          downloadAllRoutingProfiles(config),
+          downloadAllAgentStatuses(config),
+          downloadAllLambdaFunctions({
+            connectClient,
+            lambdaClient,
+            instanceId,
+            outputDir,
+            overWrite
+          })
+        ];
+      
+        await Promise.all(downloadPromises);
+        
+        downloadedFiles = ['Hours of Operation', 'Queues', 'Contact Flows', 'Prompts', 'Routing Profiles', 'Agent Statuses', 'Lambda Functions']
+        outputDir = 'metadata'
+        break;
+      }
+      
       case 'hoursOfOperation': {
         downloadedFiles = await downloadAllHoursOfOperation(config);
         break;

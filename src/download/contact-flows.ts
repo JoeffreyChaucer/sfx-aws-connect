@@ -11,6 +11,7 @@ interface ContactFlow extends AwsComponentData {
 export async function downloadSpecificContactFlow({
   connectClient,
   instanceId,
+  componentType,
   id: contactFlowId,
   outputDir,
   overWrite
@@ -19,9 +20,17 @@ export async function downloadSpecificContactFlow({
     throw new Error('ConnectClient is not provided');
   }
   
+  let safeOutputDir: string;
+  
   const writer = new AwsComponentFileWriter<ContactFlow>();
-  const defaultOutputDir = path.join(process.cwd(), 'contactFlows');
-  const safeOutputDir = outputDir || defaultOutputDir;
+
+  if (componentType === 'all') {
+    safeOutputDir = path.join(outputDir || process.cwd(), 'contactFlows');
+  } else {
+    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'contactFlows');
+    safeOutputDir = outputDir || defaultOutputDir;
+  }
+
   
   try {
     const describeResponse: DescribeContactFlowCommandOutput = await connectClient.send(new DescribeContactFlowCommand({
@@ -50,7 +59,7 @@ export async function downloadSpecificContactFlow({
     await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
     
     return fileName ?? null;
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof ResourceNotFoundException) {
       console.warn(`Contact Flow with ID ${contactFlowId} not found. It may have been deleted.`);
     } else if (error instanceof Error && error.message.includes('Invalid parameter')) {
@@ -58,7 +67,8 @@ export async function downloadSpecificContactFlow({
     } else if (error instanceof AccessDeniedException) {
       console.error(`Access denied: You don't have permission to access flow ${contactFlowId}.`);
     } else {
-      console.error(`Unexpected error downloading flow ${contactFlowId}:`, error);
+      console.error(`Unexpected error downloading contact flow ${contactFlowId}:`, error.message);
+
     }
 
     return null;

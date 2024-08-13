@@ -13,6 +13,7 @@ export async function downloadSpecificAgentStatus({
   connectClient,
   instanceId,
   id: agentStatusId,
+  componentType,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string | null> {
@@ -20,10 +21,17 @@ export async function downloadSpecificAgentStatus({
     throw new Error('ConnectClient is not provided');
   }
 
-  const writer = new AwsComponentFileWriter<AgentStatus>();
-  const defaultOutputDir = path.join(process.cwd(), 'agentStatuses');
-  const safeOutputDir = outputDir || defaultOutputDir;
+  let safeOutputDir: string;
   
+  const writer = new AwsComponentFileWriter<AgentStatus>();
+
+  if (componentType === 'all') {
+    safeOutputDir = path.join(outputDir || process.cwd(), 'agentStatuses');
+  } else {
+    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'agentStatuses');
+    safeOutputDir = outputDir || defaultOutputDir;
+  }
+
   try {
     const describeResponse: DescribeAgentStatusCommandOutput = await connectClient.send(new DescribeAgentStatusCommand({
       InstanceId: instanceId,
@@ -53,15 +61,15 @@ export async function downloadSpecificAgentStatus({
     
     return fileName ?? null;
     
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof ResourceNotFoundException) {
-      console.warn(`User with ID ${agentStatusId} not found. They may have been deleted.`);
+      console.warn(`Agent Status with ID ${agentStatusId} not found. They may have been deleted.`);
     } else if (error instanceof Error && error.message.includes('Invalid parameter')) {
-      console.warn(`Invalid User ID: ${agentStatusId}. Please check the ID and ensure it's correctly formatted.`);
+      console.warn(`Invalid Agent Status: ${agentStatusId}. Please check the ID and ensure it's correctly formatted.`);
     } else if (error instanceof AccessDeniedException) {
       console.error(`Access denied: You don't have permission to access User ${agentStatusId}.`);
     } else {
-      console.error(`Unexpected error downloading Agent Status for User ${agentStatusId}:`, error);
+      console.error(`Unexpected error downloading Agent Status for User ${agentStatusId}:`, error.message);
     }
 
     return null;
