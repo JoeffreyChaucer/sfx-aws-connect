@@ -20,7 +20,7 @@ export async function downloadSpecificRoutingProfile({
   }
   
   const writer = new AwsComponentFileWriter<RoutingProfile>();
-  const defaultOutputDir = path.join(process.cwd(), 'agentStatuses');
+  const defaultOutputDir = path.join(process.cwd(), 'routingProfiles');
   const safeOutputDir = outputDir || defaultOutputDir;
  
   try {

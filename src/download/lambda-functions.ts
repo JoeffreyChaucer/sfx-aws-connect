@@ -1,5 +1,5 @@
-import { AccessDeniedException, ListLambdaFunctionsCommand, ListLambdaFunctionsCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
-import { GetFunctionCommand, GetFunctionCommandOutput } from "@aws-sdk/client-lambda";
+import { AccessDeniedException, ListLambdaFunctionsCommand, ListLambdaFunctionsCommandOutput } from "@aws-sdk/client-connect";
+import { GetFunctionCommand, GetFunctionCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-lambda";
 import axios, { AxiosResponse } from "axios";
 import path from "node:path";
 
@@ -28,9 +28,9 @@ export async function downloadSpecificLambdaFunction({
 
   try {
     const lambdaFunctions: GetFunctionCommandOutput = await lambdaClient.send(new GetFunctionCommand({ FunctionName: funcArn }));
-  
-    if (!lambdaFunctions) return null
-    
+    if (!lambdaFunctions || !lambdaFunctions.Configuration) return null;
+
+
     const restructuredData: TLambda = {
       LambdaFunction: {
         Configuration: {
@@ -80,7 +80,7 @@ export async function downloadSpecificLambdaFunction({
   
     await writer.extractAndCleanupZip(Buffer.from(response.data), safeOutputDir, fileName, overWrite ?? false);
 
-    return fileName;    
+    return fileName!;    
   } catch(error){
     if (error instanceof ResourceNotFoundException) {
       console.warn(`Lambda Function with FunctionName: ${funcArn} not found in these Instance. Please check you Instance Id.`);

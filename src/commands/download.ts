@@ -291,8 +291,9 @@ export default class download extends Command {
 
     if (fileName) {
       this.log(`Downloaded: ${fileName}`);
+      this.log(`${fileName} have been downloaded to ${outputDir}`);
     } else {
-      this.error(`Failed to download ${componentType} with ID ${id}`);
+      this.log(`No ${componentType}:${id} found for this instance.`);
     }
   }
 }
