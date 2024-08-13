@@ -171,21 +171,31 @@ export default class download extends Command {
       outputDir, 
       overWrite
     }
+    
+    
+    const configAll: TDownloadComponentParams={
+      connectClient,
+      instanceId,
+      componentType,
+      outputDir, 
+      overWrite
+    }
     let downloadedFiles: string[];
     switch (componentType) {
       
       case 'all': {
         const downloadPromises = [
-          downloadAllHoursOfOperation(config),
-          downloadAllQueues(config),
-          downloadAllContactFlows(config),
-          downloadAllPrompts(config),
-          downloadAllRoutingProfiles(config),
-          downloadAllAgentStatuses(config),
+          downloadAllHoursOfOperation(configAll),
+          downloadAllQueues(configAll),
+          downloadAllContactFlows(configAll),
+          downloadAllPrompts(configAll),
+          downloadAllRoutingProfiles(configAll),
+          downloadAllAgentStatuses(configAll),
           downloadAllLambdaFunctions({
             connectClient,
             lambdaClient,
             instanceId,
+            componentType,
             outputDir,
             overWrite
           })
