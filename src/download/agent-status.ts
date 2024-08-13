@@ -95,7 +95,9 @@ export async function downloadAllAgentStatuses({
   }
 
   const downloadPromises: Promise<string | null>[] = listResponse.AgentStatusSummaryList
-    .filter(summary => summary.Id)
+    .filter(summary => 
+      summary.Id && 
+      summary.Name)
     .map(summary => 
       downloadSpecificAgentStatus({
         connectClient,

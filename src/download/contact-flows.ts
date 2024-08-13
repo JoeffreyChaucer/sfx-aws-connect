@@ -95,7 +95,9 @@ export async function downloadAllContactFlows({
   }
 
   const downloadPromises: Promise<string | null>[] = listResponse.ContactFlowSummaryList
-    .filter(summary => summary.Id)
+    .filter(summary => 
+      summary.Id && 
+      summary.Name)
     .map(summary => 
       downloadSpecificContactFlow({
         connectClient,

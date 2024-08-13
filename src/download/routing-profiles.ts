@@ -93,7 +93,9 @@ export async function downloadAllRoutingProfiles({
   }
 
   const downloadPromises: Promise<string | null>[] = listResponse.RoutingProfileSummaryList
-    .filter(summary => summary.Id)
+    .filter(summary => 
+      summary.Id && 
+      summary.Name)
     .map(summary => 
       downloadSpecificRoutingProfile({
         connectClient,

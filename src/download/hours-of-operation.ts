@@ -95,7 +95,9 @@ export async function downloadAllHoursOfOperation({
   }
 
   const downloadPromises: Promise<string | null>[] = listResponse.HoursOfOperationSummaryList
-  .filter(summary => summary.Id)
+  .filter(summary => 
+    summary.Id && 
+    summary.Name)
   .map(summary => 
     downloadSpecificHoursOfOperation({
       connectClient,

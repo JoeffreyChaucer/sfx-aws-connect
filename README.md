@@ -50,6 +50,7 @@ FLAGS
   -c, --componentType=<value>       (required) Component type to download. Use "Comptype" for all, or "Comptype:Id" for
                                     a single component.
                                     Valid types:
+                                    all,
                                     hoursOfOperation,
                                     queues,
                                     prompts,

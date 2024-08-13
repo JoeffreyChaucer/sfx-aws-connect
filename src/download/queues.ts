@@ -97,7 +97,9 @@ export async function downloadAllQueues({
   }
 
   const downloadPromises = queues
-    .filter(summary => summary.Id)
+    .filter(summary =>
+      summary.Id && 
+      summary.Name)
     .map(summary => 
       downloadSpecificQueue({
         connectClient,

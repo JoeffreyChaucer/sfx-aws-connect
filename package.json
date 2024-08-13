@@ -1,7 +1,7 @@
 {
   "name": "sf-aws-connect-dev",
   "description": "A new CLI generated with oclif",
-  "version": "0.1.10",
+  "version": "0.1.15",
   "author": "joeffreychaucer",
   "bin": {
     "sf-aws-connect": "./bin/run.js"

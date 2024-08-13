@@ -116,7 +116,9 @@ export async function downloadAllPrompts({
   }
 
   const downloadPromises: Promise<string | null>[] = listResponse.PromptSummaryList
-    .filter(summary => summary.Id)
+    .filter(summary => 
+      summary.Id && 
+      summary.Name)
     .map(summary => 
       downloadSpecificPrompt({
         connectClient,
