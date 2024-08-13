@@ -1,7 +1,7 @@
 {
   "name": "sf-aws-connect-dev",
   "description": "A new CLI generated with oclif",
-  "version": "0.1.7",
+  "version": "0.1.10",
   "author": "joeffreychaucer",
   "bin": {
     "sf-aws-connect": "./bin/run.js"
@@ -16,7 +16,8 @@
     "@oclif/plugin-help": "^6",
     "@oclif/plugin-plugins": "^5",
     "adm-zip": "^0.5.15",
-    "axios": "^1.7.3"
+    "axios": "^1.7.3",
+    "axios-retry": "^4.5.0"
   },
   "devDependencies": {
     "@oclif/prettier-config": "^0.2.1",

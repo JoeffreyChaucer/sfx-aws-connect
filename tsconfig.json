@@ -30,7 +30,6 @@
     "noUnusedLocals": true, // Report errors on unused local variables.
     "noUnusedParameters": true, // Report errors on unused parameters in functions
     "skipLibCheck": true,
-    //"noEmit": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"],
