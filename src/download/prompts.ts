@@ -1,6 +1,5 @@
 import { AccessDeniedException, DescribePromptCommand, DescribePromptCommandOutput, GetPromptFileCommand, GetPromptFileCommandOutput, Prompt as IPrompt, ListPromptsCommand, ListPromptsCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
 import axios, { AxiosResponse } from 'axios';
-import axiosRetry from 'axios-retry';
 import path from "node:path";
 
 import { AwsComponentData, AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
@@ -15,8 +14,8 @@ interface Prompt extends AwsComponentData {
 export async function downloadSpecificPrompt({
   connectClient,
   instanceId,
-  id: promptId,
   componentType,
+  id: promptId,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string | null> {
@@ -29,9 +28,9 @@ export async function downloadSpecificPrompt({
   const writer = new AwsComponentFileWriter<Prompt>();
 
   if (componentType === 'all') {
-    safeOutputDir = path.join(outputDir || process.cwd(), 'hoursOfOperation');
+    safeOutputDir = path.join(outputDir || process.cwd(), 'prompts');
   } else {
-    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'hoursOfOperation');
+    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'prompts');
     safeOutputDir = outputDir || defaultOutputDir;
   }
 
@@ -100,7 +99,8 @@ export async function downloadSpecificPrompt({
 
 export async function downloadAllPrompts({
   connectClient,
-  instanceId, 
+  instanceId,
+  componentType,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string[]> {
@@ -121,6 +121,7 @@ export async function downloadAllPrompts({
       downloadSpecificPrompt({
         connectClient,
         instanceId,
+        componentType,
         outputDir,
         overWrite,
         id: summary.Id!,

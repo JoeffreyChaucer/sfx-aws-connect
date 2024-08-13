@@ -78,7 +78,8 @@ export async function downloadSpecificHoursOfOperation({
 
 export async function downloadAllHoursOfOperation({
   connectClient,
-  instanceId, 
+  instanceId,
+  componentType,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string[]> {
@@ -99,6 +100,7 @@ export async function downloadAllHoursOfOperation({
     downloadSpecificHoursOfOperation({
       connectClient,
       instanceId,
+      componentType,
       outputDir,
       overWrite,
       id: summary.Id!,

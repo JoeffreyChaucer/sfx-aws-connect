@@ -77,7 +77,8 @@ export async function downloadSpecificContactFlow({
 
 export async function downloadAllContactFlows({
   connectClient,
-  instanceId, 
+  instanceId,
+  componentType,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string[]> {
@@ -99,6 +100,7 @@ export async function downloadAllContactFlows({
       downloadSpecificContactFlow({
         connectClient,
         instanceId,
+        componentType,
         outputDir,
         overWrite,
         id: summary.Id!,

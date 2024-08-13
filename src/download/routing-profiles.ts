@@ -11,8 +11,8 @@ interface RoutingProfile extends AwsComponentData {
 export async function downloadSpecificRoutingProfile({
   connectClient,
   instanceId,
-  id: routingProfileId,
   componentType,
+  id: routingProfileId,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string | null> {
@@ -77,6 +77,7 @@ export async function downloadSpecificRoutingProfile({
 export async function downloadAllRoutingProfiles({
   connectClient,
   instanceId, 
+  componentType,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string[]> {
@@ -97,6 +98,7 @@ export async function downloadAllRoutingProfiles({
       downloadSpecificRoutingProfile({
         connectClient,
         instanceId,
+        componentType,
         outputDir,
         overWrite,
         id: summary.Id!,

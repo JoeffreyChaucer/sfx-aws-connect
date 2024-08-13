@@ -108,7 +108,8 @@ export async function downloadSpecificLambdaFunction({
 export async function downloadAllLambdaFunctions({
     connectClient,
     lambdaClient,
-    instanceId, 
+    instanceId,
+    componentType, 
     outputDir,
     overWrite
   }:TDownloadComponentParams): Promise<string[]> {
@@ -131,6 +132,7 @@ export async function downloadAllLambdaFunctions({
       downloadSpecificLambdaFunction({
         lambdaClient,
         instanceId,
+        componentType,
         outputDir,
         overWrite,
         id: functionName,

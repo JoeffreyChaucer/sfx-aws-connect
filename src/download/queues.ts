@@ -11,8 +11,8 @@ interface Queue extends AwsComponentData {
 export async function downloadSpecificQueue({
   connectClient,
   instanceId,
-  id: queueId,
   componentType,
+  id: queueId,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string | null> {
@@ -79,6 +79,7 @@ export async function downloadSpecificQueue({
 export async function downloadAllQueues({
   connectClient,
   instanceId, 
+  componentType,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string[]> {
@@ -101,6 +102,7 @@ export async function downloadAllQueues({
       downloadSpecificQueue({
         connectClient,
         instanceId,
+        componentType,
         outputDir,
         overWrite,
         id: summary.Id!,

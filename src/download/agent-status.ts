@@ -12,8 +12,8 @@ interface AgentStatus extends AwsComponentData {
 export async function downloadSpecificAgentStatus({
   connectClient,
   instanceId,
-  id: agentStatusId,
   componentType,
+  id: agentStatusId,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string | null> {
@@ -78,7 +78,8 @@ export async function downloadSpecificAgentStatus({
 
 export async function downloadAllAgentStatuses({
   connectClient,
-  instanceId, 
+  instanceId,
+  componentType,
   outputDir,
   overWrite
 }: TDownloadComponentParams): Promise<string[]> {
@@ -99,6 +100,7 @@ export async function downloadAllAgentStatuses({
       downloadSpecificAgentStatus({
         connectClient,
         instanceId,
+        componentType,
         outputDir,
         overWrite,
         id: summary.Id!,
