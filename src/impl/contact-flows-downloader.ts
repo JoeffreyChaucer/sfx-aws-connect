@@ -1,6 +1,6 @@
 import { ConnectClient } from "@aws-sdk/client-connect";
 
-import { ContactFlow, downloadAllContactFlows, downloadSpecificContactFlow } from '../download/contact-flow.js';
+import { ContactFlow, downloadAllContactFlows, downloadSpecificContactFlow } from '../download/contact-flows.js';
 
 export class ContactFlowDownloader {
   async downloadComponent(
