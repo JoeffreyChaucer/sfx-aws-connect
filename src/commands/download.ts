@@ -176,7 +176,7 @@ export default class Download extends Command {
         const fileData = await writer.writeComponentFile(outputDir, item, overWrite);
         if (fileData) {
           results.push(fileData);
-          spinner.succeed(`${fileData.fileName} is downloaded to ${fileData.filePath}`);
+          spinner.succeed(`"${fileData.fileName}" is downloaded to ""${fileData.filePath}"`);
         } else {
           spinner.warn('No file data returned.');
         }
