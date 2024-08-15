@@ -1,116 +1,100 @@
-import { AccessDeniedException, DescribeAgentStatusCommand, DescribeAgentStatusCommandOutput,  AgentStatus as IAgentStatus, ListAgentStatusesCommand, ListAgentStatusesCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
-import path from "node:path";
+import type { ConnectClient, DescribeAgentStatusCommandOutput, ListAgentStatusesCommandOutput } from "@aws-sdk/client-connect";
 
-import { AwsComponentData, AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
-import { TDownloadComponentParams } from '../types/index.js';
+import {
+  DescribeAgentStatusCommand,
+  AgentStatus as IAgentStatus,
+  ListAgentStatusesCommand,
+  ResourceNotFoundException
+} from "@aws-sdk/client-connect";
 
-
-interface AgentStatus extends AwsComponentData {
+export interface AgentStatus {
   AgentStatus: IAgentStatus;
 }
 
-export async function downloadSpecificAgentStatus({
-  connectClient,
-  instanceId,
-  componentType,
-  id: agentStatusId,
-  outputDir,
-  overWrite
-}: TDownloadComponentParams): Promise<string | null> {
-  if (!connectClient) {
-    throw new Error('ConnectClient is not provided');
-  }
-
-  let safeOutputDir: string;
+export async function downloadSpecificAgentStatus(
+  connectClient: ConnectClient,
+  instanceId: string,
+  agentStatusId?: string,
+  name?: string
+): Promise<AgentStatus | undefined> {
+  let agentStatusIdToUse = agentStatusId;
   
-  const writer = new AwsComponentFileWriter<AgentStatus>();
-
-  if (componentType === 'all') {
-    safeOutputDir = path.join(outputDir || process.cwd(), 'agentStatuses');
-  } else {
-    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'agentStatuses');
-    safeOutputDir = outputDir || defaultOutputDir;
-  }
-
-  try {
-    const describeResponse: DescribeAgentStatusCommandOutput = await connectClient.send(new DescribeAgentStatusCommand({
-      InstanceId: instanceId,
-      AgentStatusId: agentStatusId
-    }));
-    
-    const agentStatus: IAgentStatus | undefined = describeResponse.AgentStatus;
-    if (!agentStatus) return null;
-    
-    const restructuredData: AgentStatus = {
-      AgentStatus: {
-        AgentStatusARN: agentStatus.AgentStatusARN,
-        AgentStatusId: agentStatus.AgentStatusId,
-        Name: agentStatus.Name,
-        Description: agentStatus.Description ,
-        Type: agentStatus.Type,
-        DisplayOrder: agentStatus.DisplayOrder,
-        State: agentStatus.State,
-        Tags: agentStatus.Tags,
-        LastModifiedTime: agentStatus.LastModifiedTime,
-        LastModifiedRegion: agentStatus.LastModifiedRegion
-      }
-    };
-    
-    const fileName: string | undefined = `${describeResponse.AgentStatus?.Name}`;
-    await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
-    
-    return fileName ?? null;
-    
-  } catch (error: any) {
-    if (error instanceof ResourceNotFoundException) {
-      console.warn(`Agent Status with ID ${agentStatusId} not found. They may have been deleted.`);
-    } else if (error instanceof Error && error.message.includes('Invalid parameter')) {
-      console.warn(`Invalid Agent Status: ${agentStatusId}. Please check the ID and ensure it's correctly formatted.`);
-    } else if (error instanceof AccessDeniedException) {
-      console.error(`Access denied: You don't have permission to access User ${agentStatusId}.`);
-    } else {
-      console.error(`Unexpected error downloading Agent Status for User ${agentStatusId}:`, error.message);
+  if (name && !agentStatusId) {
+    agentStatusIdToUse = await getIdByName(connectClient, instanceId, name);
+    if (!agentStatusIdToUse) {
+      throw new ResourceNotFoundException({
+        message: `Agent Status with name "${name}" not found.`,
+        $metadata: {}
+      });
     }
-
-    return null;
   }
+  
+  const command: DescribeAgentStatusCommand = new DescribeAgentStatusCommand({
+    InstanceId: instanceId,
+    AgentStatusId: agentStatusIdToUse
+  });
+ 
+  const response: DescribeAgentStatusCommandOutput = await connectClient.send(command);
+  
+  
+  if(!response.AgentStatus) return undefined
+  
+  
+  const agentStatus: IAgentStatus = response.AgentStatus
+  
+  const agentStatusData: AgentStatus = {
+    AgentStatus: {
+      AgentStatusARN: agentStatus.AgentStatusARN,
+      AgentStatusId: agentStatus.AgentStatusId,
+      Name: agentStatus.Name,
+      Description: agentStatus.Description ,
+      Type: agentStatus.Type,
+      DisplayOrder: agentStatus.DisplayOrder,
+      State: agentStatus.State,
+      Tags: agentStatus.Tags,
+      LastModifiedTime: agentStatus.LastModifiedTime,
+      LastModifiedRegion: agentStatus.LastModifiedRegion
+    }
+  };
+
+  return agentStatusData;
 }
 
-export async function downloadAllAgentStatuses({
-  connectClient,
-  instanceId,
-  componentType,
-  outputDir,
-  overWrite
-}: TDownloadComponentParams): Promise<string[]> {
-  if (!connectClient) {
-    throw new Error('ConnectClient is not provided');
-  }
+async function getIdByName(connectClient: ConnectClient, instanceId: string, name: string): Promise<string | undefined> {
+    const command = new ListAgentStatusesCommand({ InstanceId: instanceId });
+    const response: ListAgentStatusesCommandOutput = await connectClient.send(command);
 
-  const listResponse: ListAgentStatusesCommandOutput = await connectClient.send(new ListAgentStatusesCommand({ InstanceId: instanceId }));
+    const agentStatusId = response.AgentStatusSummaryList?.find(status => status.Name === name);
+
+    return agentStatusId?.Id;
+
+}
+
+
+export async function downloadAllAgentStatuses( 
+  connectClient: ConnectClient,
+  instanceId: string,
+): Promise<(AgentStatus | undefined)[]> {
+  
+  const command: ListAgentStatusesCommand = new ListAgentStatusesCommand({ InstanceId: instanceId })
+  const listResponse: ListAgentStatusesCommandOutput = await connectClient.send(command);
 
   if (!listResponse.AgentStatusSummaryList || listResponse.AgentStatusSummaryList.length === 0) {
-    console.warn('No Users found for this Connect instance.');
+    console.warn('No AgentStatus found for this Connect instance.');
     return [];
   }
 
-  const downloadPromises: Promise<string | null>[] = listResponse.AgentStatusSummaryList
-    .filter(summary => 
-      summary.Id && 
-      summary.Name)
-    .map(summary => 
-      downloadSpecificAgentStatus({
-        connectClient,
-        instanceId,
-        componentType,
-        outputDir,
-        overWrite,
-        id: summary.Id!,
-      }).catch(() => null)
-    );
-    
-  const downloadResults: (string | null)[] = await Promise.all(downloadPromises);
+  const agentStatus: Promise<AgentStatus | undefined>[] = listResponse.AgentStatusSummaryList
+  .filter((AgentStatusSummary) => AgentStatusSummary.Id && AgentStatusSummary.Name)  // Filter out items without an ID and Names
+  .map((AgentStatusSummary) =>
+    downloadSpecificAgentStatus(
+      connectClient,
+      instanceId,
+      AgentStatusSummary.Id!
+    )
+  );
+  
+  const agentStatusData: (AgentStatus | undefined)[] = await Promise.all(agentStatus)
 
-  // Filter out null results (failed downloads) and return successful downloads
-  return downloadResults.filter((result): result is string => result !== null);
+  return agentStatusData
 }

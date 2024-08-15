@@ -2,11 +2,13 @@ import AdmZip from 'adm-zip';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-export interface AwsComponentData {
-  [key: string]: unknown;
+
+export interface WriteResult {
+  fileName: string;
+  filePath: string;
 }
 
-export class AwsComponentFileWriter<T extends AwsComponentData> {
+export class AwsComponentFileWriter<T> {
   async extractAndCleanupZip(zipBuffer: Buffer, outputDir: string, componentName: string, overwrite: boolean = false): Promise<string> {
     try {
       const componentDir = path.join(outputDir, componentName);
@@ -39,14 +41,17 @@ export class AwsComponentFileWriter<T extends AwsComponentData> {
     }
   }
 
-  async writeComponentFile(folderPath: string, component: T, overwrite: boolean = false): Promise<void> {
+  async writeComponentFile(folderPath: string = '.', component: T, overwrite: boolean = false): Promise<WriteResult | undefined> {
     try {
       await this.createDirectory(folderPath);
       const fileName = await this.generateFileName(folderPath, component, overwrite);
       const filePath = path.join(folderPath, fileName);
       await this.writeFile(filePath, component, overwrite);
+      
+      return {filePath, fileName}
     } catch (error) {
       console.error(`Error writing component file:`, error);
+      return undefined
     }
   }
 
@@ -153,7 +158,6 @@ export class AwsComponentFileWriter<T extends AwsComponentData> {
         console.warn(`File ${filePath} already exists. Skipping.`);
         return;
       } catch {
-        console.info(`File ${filePath} does not exist. Proceeding with writing.`);
       }
     }
 

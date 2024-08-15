@@ -1,29 +1,4 @@
-import type { ConnectClient } from "@aws-sdk/client-connect";
-import type { LambdaClient } from "@aws-sdk/client-lambda";
 
-export type TAwsAccessFlags = {
-    accessKeyId?: string;
-    authMethod?: 'accessKey' | 'sso';
-    profile?: string;
-    region?: string;
-    secretAccessKey?: string;
-    secretSessionToken?: string;
-  };
-  
-  
-export type TDownloadComponentParams = {
-    connectClient?: ConnectClient;
-    lambdaClient?: LambdaClient;
-    instanceId?: string;
-    componentType?: string;
-    outputDir?: string;
-    id?: string;
-    overWrite?: boolean;
-    download?: boolean;
-  } & TAwsAccessFlags
-  
-  
-export type TComponentType = 'all' | 'hoursOfOperation' | 'queues' | 'prompts' | 'contactFlows' | 'routingProfiles' | 'agentStatus' | 'lambdaFunctions';
 
 export type EnvironmentVariables = {
   [key: string]: string | undefined;

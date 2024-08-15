@@ -1,116 +1,96 @@
-import { AccessDeniedException, DescribeHoursOfOperationCommand, DescribeHoursOfOperationCommandOutput, HoursOfOperation as IHoursOfOperation, ListHoursOfOperationsCommand, ListHoursOfOperationsCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
-import path from "node:path";
+import type { ConnectClient } from "@aws-sdk/client-connect";
 
-import { AwsComponentData, AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
-import { TDownloadComponentParams } from '../types/index.js';
+import { 
+  DescribeHoursOfOperationCommand, 
+  DescribeHoursOfOperationCommandOutput,  
+  HoursOfOperation as IHoursOfOperation,
+  ListHoursOfOperationsCommand, 
+  ListHoursOfOperationsCommandOutput, 
+  ResourceNotFoundException 
+} from "@aws-sdk/client-connect";
 
-interface HoursOfOperation extends AwsComponentData {
+export interface HoursOfOperation {
   HoursOfOperation: IHoursOfOperation;
-};
-
-export async function downloadSpecificHoursOfOperation({
-  connectClient,
-  instanceId,
-  componentType,
-  id: hoursOfOperationId,
-  outputDir,
-  overWrite
-}: TDownloadComponentParams): Promise<string | null> {
-  
-  if (!connectClient) {
-    throw new Error('ConnectClient is not provided');
-  }
-  
-  let safeOutputDir: string;
-  
-  const writer = new AwsComponentFileWriter<HoursOfOperation>();
-
-  if (componentType === 'all') {
-    safeOutputDir = path.join(outputDir || process.cwd(), 'hoursOfOperation');
-  } else {
-    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'hoursOfOperation');
-    safeOutputDir = outputDir || defaultOutputDir;
-  }
-
-  try {
-    const describeResponse: DescribeHoursOfOperationCommandOutput = await connectClient.send(new DescribeHoursOfOperationCommand({
-      InstanceId: instanceId,
-      HoursOfOperationId: hoursOfOperationId
-    }));
-  
-    const hoursOfOperation: IHoursOfOperation | undefined = describeResponse.HoursOfOperation;
-    if (!hoursOfOperation) return null;
-    
-    const restructuredData: HoursOfOperation = {
-      HoursOfOperation: {
-        HoursOfOperationId: hoursOfOperation.HoursOfOperationId,
-        HoursOfOperationArn: hoursOfOperation.HoursOfOperationArn,
-        Name: hoursOfOperation.Name,
-        Description: hoursOfOperation.Description,
-        TimeZone: hoursOfOperation.TimeZone,
-        Config: hoursOfOperation.Config,
-        Tags: hoursOfOperation.Tags,
-        LastModifiedTime:hoursOfOperation.LastModifiedTime,
-        LastModifiedRegion: hoursOfOperation.LastModifiedRegion
-      }
-    };
-    
-    const fileName: string | undefined = hoursOfOperation.Name;
-    await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
-    
-    return fileName ?? null;
-  } catch (error: any) {
-    if (error instanceof ResourceNotFoundException) {
-      console.warn(`Hours of operation with ID ${hoursOfOperationId} not found. It may have been deleted.`);
-    } else if (error instanceof Error && error.message.includes('Invalid parameter')) {
-      console.warn(`Invalid Hours of operation ID: ${hoursOfOperationId}. Please check the ID and ensure it's correctly formatted.`);
-    } else if (error instanceof AccessDeniedException) {
-      console.error(`Access denied: You don't have permission to access Hours of operation ${hoursOfOperationId}.`);
-    } else {
-      console.error(`Unexpected error downloading Hours of operation ${hoursOfOperationId}:`, error.mess);
-    }
-
-    return null;
- 
-  }
-  
 }
 
-export async function downloadAllHoursOfOperation({
-  connectClient,
-  instanceId,
-  componentType,
-  outputDir,
-  overWrite
-}: TDownloadComponentParams): Promise<string[]> {
-  if (!connectClient) {
-    throw new Error('ConnectClient is not provided');
+export async function downloadSpecificHoursOfOperation(
+  connectClient: ConnectClient,
+  instanceId: string,
+  hoursOfOperationId?: string,
+  name?: string
+): Promise<HoursOfOperation | undefined> {
+  let hoursOfOperationIdToUse = hoursOfOperationId;
+  
+  if (name && !hoursOfOperationId) {
+    hoursOfOperationIdToUse = await getIdByName(connectClient, instanceId, name);
+    if (!hoursOfOperationIdToUse) {
+      throw new ResourceNotFoundException({
+        message: `Hours of Operation with name "${name}" not found.`,
+        $metadata: {}
+      });
+    }
   }
+  
+  const command: DescribeHoursOfOperationCommand = new DescribeHoursOfOperationCommand({
+    InstanceId: instanceId,
+    HoursOfOperationId: hoursOfOperationIdToUse
+  });
+ 
+  const response: DescribeHoursOfOperationCommandOutput = await connectClient.send(command);
+  if(!response.HoursOfOperation) return undefined;
+  
+  const hoursOfOperation: IHoursOfOperation = response.HoursOfOperation;
+  
+  const hoursOfOperationData: HoursOfOperation = {
+    HoursOfOperation: {
+      HoursOfOperationId: hoursOfOperation.HoursOfOperationId,
+      HoursOfOperationArn: hoursOfOperation.HoursOfOperationArn,
+      Name: hoursOfOperation.Name,
+      Description: hoursOfOperation.Description,
+      TimeZone: hoursOfOperation.TimeZone,
+      Config: hoursOfOperation.Config,
+      Tags: hoursOfOperation.Tags,
+      LastModifiedTime: hoursOfOperation.LastModifiedTime,
+      LastModifiedRegion: hoursOfOperation.LastModifiedRegion
+    }
+  };
+  
+  return hoursOfOperationData;
+}
 
-  const listResponse: ListHoursOfOperationsCommandOutput = await connectClient.send(new ListHoursOfOperationsCommand({ InstanceId: instanceId }));
+async function getIdByName(connectClient: ConnectClient, instanceId: string, name: string): Promise<string | undefined> {
+    const command = new ListHoursOfOperationsCommand({ InstanceId: instanceId });
+    const response: ListHoursOfOperationsCommandOutput = await connectClient.send(command);
+
+    const hoursOfOperationId = response.HoursOfOperationSummaryList?.find(hours => hours.Name === name);
+
+    return hoursOfOperationId?.Id;
+}
+
+export async function downloadAllHoursOfOperation( 
+  connectClient: ConnectClient,
+  instanceId: string,
+): Promise<(HoursOfOperation | undefined)[]> {
+  
+  const command: ListHoursOfOperationsCommand = new ListHoursOfOperationsCommand({ InstanceId: instanceId })
+  const listResponse: ListHoursOfOperationsCommandOutput = await connectClient.send(command);
 
   if (!listResponse.HoursOfOperationSummaryList || listResponse.HoursOfOperationSummaryList.length === 0) {
-    console.warn('No Hours Of Operation found for this Connect instance.');
+    console.warn('No Hours of Operation found for this Connect instance.');
     return [];
   }
 
-  const downloadPromises: Promise<string | null>[] = listResponse.HoursOfOperationSummaryList
-  .filter(summary => 
-    summary.Id && 
-    summary.Name)
-  .map(summary => 
-    downloadSpecificHoursOfOperation({
+  const hoursOfOperation: Promise<HoursOfOperation | undefined>[] = listResponse.HoursOfOperationSummaryList
+  .filter((HoursOfOperationSummary) => HoursOfOperationSummary.Id && HoursOfOperationSummary.Name)  // Filter out items without an ID and Names
+  .map((HoursOfOperationSummary) =>
+    downloadSpecificHoursOfOperation(
       connectClient,
       instanceId,
-      componentType,
-      outputDir,
-      overWrite,
-      id: summary.Id!,
-    }).catch(() => null)
-  );   
-    
-  const downloadResults: (string | null)[] = await Promise.all(downloadPromises);
+      HoursOfOperationSummary.Id!
+    )
+  );
+  
+  const hoursOfOperationData: (HoursOfOperation | undefined)[] = await Promise.all(hoursOfOperation)
 
-  // Filter out null results (failed downloads) and return successful downloads
-  return downloadResults.filter((result): result is string => result !== null);
+  return hoursOfOperationData
 }

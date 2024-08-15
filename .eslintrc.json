@@ -4,6 +4,7 @@
     "perfectionist/sort-objects": "off",
     "perfectionist/sort-object-types": "off",
     "perfectionist/sort-union-types": "off",
+    "max-params": "off",
     "@typescript-eslint/no-explicit-any": "warn"
   }
 }

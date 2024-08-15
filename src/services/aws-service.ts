@@ -1,20 +1,27 @@
-import { ConnectClient } from "@aws-sdk/client-connect";
+import { ConnectClient, } from "@aws-sdk/client-connect";
 import { LambdaClient } from "@aws-sdk/client-lambda";
 import { fromSSO } from "@aws-sdk/credential-provider-sso";
 import { AwsCredentialIdentity } from "@aws-sdk/types";
 
-import { TAwsAccessFlags } from '../types/index.js';
+type awsConnectConfig = {
+  profile?: string;
+  region?: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
+  sessionToken?: string;
+};
+
 
 export class AwsService {
-  private config: TAwsAccessFlags;
-  private credentials: AwsCredentialIdentity | undefined;
+  private config: awsConnectConfig
+  private credentials?: AwsCredentialIdentity
   private static instance: AwsService;
 
-  private constructor(config: TAwsAccessFlags) {
+  private constructor(config: awsConnectConfig) {
     this.config = config;
   }
 
-  static getInstance(config: TAwsAccessFlags): AwsService {
+  static getInstance(config: awsConnectConfig): AwsService {
     if (!AwsService.instance) {
       AwsService.instance = new AwsService(config);
     }
@@ -44,27 +51,24 @@ export class AwsService {
       return this.credentials;
     }
   
-    if (this.config.authMethod === 'accessKey') {
-      if (!this.config.accessKeyId || !this.config.secretAccessKey) {
-        throw new Error('Access key ID and secret access key are required for accessKey auth method');
+    if (this.config.profile) {
+      try {
+        const credentialProvider = fromSSO({ profile: this.config.profile });
+        this.credentials = await credentialProvider();
+        return this.credentials;
+      } catch (error: any) {
+        console.error("Error getting SSO credentials:", error.message);
+        throw new Error("Failed to retrieve SSO credentials. Please ensure you're logged in with 'aws sso login'.");
       }
-
+    } else if (this.config.accessKeyId && this.config.secretAccessKey) {
       this.credentials = {
         accessKeyId: this.config.accessKeyId,
         secretAccessKey: this.config.secretAccessKey,
-        sessionToken: this.config.secretSessionToken
+        sessionToken: this.config.sessionToken
       };
-    } else if (this.config.authMethod === 'sso') {
-      if (!this.config.profile) {
-        throw new Error('Profile name is required for SSO auth method');
-      }
-
-      const credentialProvider = fromSSO({ profile: this.config.profile });
-      this.credentials = await credentialProvider();
+      return this.credentials;
     } else {
-      throw new Error('Invalid authentication method');
+      throw new Error("No valid credentials provided. Please specify either an SSO profile or access key credentials.");
     }
-  
-    return this.credentials;
   }
 }
