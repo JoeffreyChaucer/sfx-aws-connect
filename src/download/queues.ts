@@ -43,15 +43,17 @@ export async function downloadSpecificQueue(
   
   const queueData: Queue = {
     Queue: {
+      Name: queue.Name,
       QueueId: queue.QueueId,
       QueueArn: queue.QueueArn,
-      Name: queue.Name,
       Description: queue.Description,
       OutboundCallerConfig: queue.OutboundCallerConfig,
       HoursOfOperationId: queue.HoursOfOperationId,
       MaxContacts: queue.MaxContacts,
       Status: queue.Status,
-      Tags: queue.Tags
+      Tags: queue.Tags,
+      LastModifiedTime: queue.LastModifiedTime,
+      LastModifiedRegion: queue.LastModifiedRegion
     }
   };
   
