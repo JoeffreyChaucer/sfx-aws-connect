@@ -2,6 +2,7 @@ import { AgentStatusDownloader } from './agent-status-downloader.js';
 import { ContactFlowDownloader } from './contact-flows-downloader.js';
 import { HoursOfOperationDownloader } from './hours-of-operation-downloader.js';
 import { QueueDownloader } from './queues-downloader.js';
+import { QuickConnectDownloader } from './quick-connect-downloader.js';
 import { RoutingProfileDownloader } from './routing-profiles-downloader.js';
 // Import other downloader classes as they are implemented
 // import { PromptDownloader } from './prompt-downloader.js';
@@ -49,9 +50,7 @@ export const DownloaderFactory = {
       }
 
       case 'quickconnect': {
-        // TODO: Implement QuickConnectDownloader
-        // return new QuickConnectDownloader();
-        throw new Error('QuickConnect downloader not yet implemented');
+        return new QuickConnectDownloader();
       }
 
       case 'lambdafunctions': {
