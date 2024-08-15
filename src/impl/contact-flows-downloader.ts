@@ -1,6 +1,6 @@
 import { ConnectClient } from "@aws-sdk/client-connect";
 
-import { ContactFlow, downloadAllContactFlows, downloadSpecificContactFlow } from '../download/contact-flows.js';
+import { ContactFlow, fetchAllContactFlows, fetchSpecificContactFlow } from '../download/contact-flows.js';
 
 export class ContactFlowDownloader {
   async downloadComponent(
@@ -10,10 +10,10 @@ export class ContactFlowDownloader {
     name?: string
   ): Promise<ContactFlow | ContactFlow[] | undefined> {
     if (id || name) {
-      return downloadSpecificContactFlow(connectClient, instanceId, id, name);
+      return fetchSpecificContactFlow(connectClient, instanceId, id, name);
     }
  
-    const allContactFlows = await downloadAllContactFlows(connectClient, instanceId);
+    const allContactFlows = await fetchAllContactFlows(connectClient, instanceId);
 
     return allContactFlows.filter((item): item is ContactFlow => item !== undefined);
   }

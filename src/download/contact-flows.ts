@@ -6,12 +6,15 @@ import {
   ListContactFlowsCommand,
   ResourceNotFoundException
 } from "@aws-sdk/client-connect";
+import pLimit from 'p-limit';
 
 export interface ContactFlow {
   ContactFlow: IContactFlow;
 }
 
-export async function downloadSpecificContactFlow(
+const limit = pLimit(1);
+
+export async function fetchSpecificContactFlow(
   connectClient: ConnectClient,
   instanceId: string,
   contactFlowId?: string,
@@ -66,7 +69,7 @@ async function getIdByName(connectClient: ConnectClient, instanceId: string, nam
     return contactFlowId?.Id;
 }
 
-export async function downloadAllContactFlows( 
+export async function fetchAllContactFlows( 
   connectClient: ConnectClient,
   instanceId: string,
 ): Promise<(ContactFlow | undefined)[]> {
@@ -80,16 +83,23 @@ export async function downloadAllContactFlows(
   }
 
   const contactFlows: Promise<ContactFlow | undefined>[] = listResponse.ContactFlowSummaryList
-  .filter((ContactFlowSummary) => ContactFlowSummary.Id && ContactFlowSummary.Name)  // Filter out items without an ID and Names
+  .filter((ContactFlowSummary) => ContactFlowSummary.Id && ContactFlowSummary.Name) // Filter out items without an ID and Names
   .map((ContactFlowSummary) =>
-    downloadSpecificContactFlow(
-      connectClient,
-      instanceId,
-      ContactFlowSummary.Id!
+    limit(() =>
+      fetchSpecificContactFlow(
+        connectClient,
+        instanceId,
+        ContactFlowSummary.Id!
+      )
     )
   );
+
   
   const contactFlowData: (ContactFlow | undefined)[] = await Promise.all(contactFlows)
+  
+  
+  const validContactFlowData: ContactFlow[] = contactFlowData.filter((flow): flow is ContactFlow => flow !== undefined);
 
-  return contactFlowData
+
+  return validContactFlowData
 }
