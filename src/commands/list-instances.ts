@@ -2,7 +2,18 @@ import { ListInstancesCommand } from '@aws-sdk/client-connect';
 import { Command, Flags } from '@oclif/core';
 
 import { AwsService } from '../services/aws-service.js';
-import { TAwsAccessFlags } from '../types/index.js';
+
+
+type Tconfig = {
+  profile?: string,
+  accessKeyId?: string,
+  secretAccessKey?: string,
+  secretSessionToken?: string,
+  region: string,
+  name?: string,
+  id?: string,
+  outputDir?: string,
+}
 
 export default class ListInstances extends Command {
   static description = 'This command lists all AWS Connect instances in the specified region';
@@ -44,17 +55,15 @@ export default class ListInstances extends Command {
   async run(): Promise<void> {
     const { flags } = await this.parse(ListInstances);
 
-    const config: TAwsAccessFlags = {
+    const config: Tconfig = {
       accessKeyId: flags.accessKeyId,
-      authMethod: flags.profile ? 'sso' : 'accessKey',
       profile: flags.profile,
       region: flags.region,
       secretAccessKey: flags.secretAccessKey,
-      secretSessionToken: flags.secretToken
+      secretSessionToken: flags.secretToken,
     };
     
-    const isAuthValid =
-    config.profile || (config.accessKeyId && config.secretAccessKey && config.secretSessionToken);
+    const isAuthValid = config.profile || config.accessKeyId
 
     if (!isAuthValid) {
       this.error('Auth is required: either AWS profile or access key credentials (accessKeyId, secretAccessKey and secretSessionToken) must be provided.', { exit: 1 });
@@ -64,7 +73,7 @@ export default class ListInstances extends Command {
     await this.listInstances(config);
   }
 
-  private async listInstances(config: TAwsAccessFlags): Promise<void> {
+  private async listInstances(config: Tconfig): Promise<void> {
     const awsService = AwsService.getInstance(config);
 
     try {
@@ -78,15 +87,12 @@ export default class ListInstances extends Command {
       }
 
       console.log('Instances:', response.InstanceSummaryList);
-    } catch(error: unknown) {
-      if(error instanceof Error){
+    } catch(error: any) {
         if (error.name === 'UnrecognizedClientException') {
           this.error('Authentication Error: Please check your AWS credentials and region.');
         } else {
           this.error(`Error listing Amazon Connect instances: ${error.message}`);
         }
-      }
-  
     }
   }
 }

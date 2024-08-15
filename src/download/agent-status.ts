@@ -36,9 +36,7 @@ export async function downloadSpecificAgentStatus(
  
   const response: DescribeAgentStatusCommandOutput = await connectClient.send(command);
   
-  
   if(!response.AgentStatus) return undefined
-  
   
   const agentStatus: IAgentStatus = response.AgentStatus
   
