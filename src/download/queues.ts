@@ -1,118 +1,96 @@
-import { AccessDeniedException, Queue as AwsQueue, DescribeQueueCommand, ListQueuesCommand, ListQueuesCommandOutput, QueueSummary, ResourceNotFoundException } from "@aws-sdk/client-connect";
-import path from "node:path";
+import type { ConnectClient } from "@aws-sdk/client-connect";
 
-import { AwsComponentData, AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
-import { TDownloadComponentParams } from '../types/index.js';
+import { 
+  DescribeQueueCommand, 
+  DescribeQueueCommandOutput,  
+  Queue as IQueue,
+  ListQueuesCommand, 
+  ListQueuesCommandOutput, 
+  ResourceNotFoundException 
+} from "@aws-sdk/client-connect";
 
-interface Queue extends AwsComponentData {
-  Queue: AwsQueue;
+export interface Queue {
+  Queue: IQueue;
 }
 
-export async function downloadSpecificQueue({
-  connectClient,
-  instanceId,
-  componentType,
-  id: queueId,
-  outputDir,
-  overWrite
-}: TDownloadComponentParams): Promise<string | null> {
-  if (!connectClient) {
-    throw new Error('ConnectClient is not provided');
-  }
+export async function downloadSpecificQueue(
+  connectClient: ConnectClient,
+  instanceId: string,
+  queueId?: string,
+  name?: string
+): Promise<Queue | undefined> {
+  let queueIdToUse = queueId;
   
-  let safeOutputDir: string;
-  
-  const writer = new AwsComponentFileWriter<Queue>();
-  
-  if (componentType === 'all') {
-    safeOutputDir = path.join(outputDir || process.cwd(), 'queues');
-  } else {
-    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'queues');
-    safeOutputDir = outputDir || defaultOutputDir;
-  }
-  
-  try {
-    const describeResponse = await connectClient.send(new DescribeQueueCommand({
-      InstanceId: instanceId,
-      QueueId: queueId
-    }));
-
-    const queue: AwsQueue | undefined = describeResponse.Queue;
-    if (!queue) return null;
-
-    const restructuredData: Queue = {
-      Queue: {
-        Name: queue.Name,
-        QueueArn: queue.QueueArn,
-        QueueId: queue.QueueId,
-        Description: queue.Description,
-        OutboundCallerConfig: queue.OutboundCallerConfig,
-        HoursOfOperationId: queue.HoursOfOperationId,
-        MaxContacts: queue.MaxContacts,
-        Status: queue.Status,
-        Tags: queue.Tags,
-        LastModifiedTime: queue.LastModifiedTime,
-        LastModifiedRegion: queue.LastModifiedRegion
-      }
-    };
-    
-    const fileName = queue.Name ?? 'Unknown_Queue';
-    await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
-
-    return fileName ?? null;
-  } catch (error: any) {
-    
-    if (error instanceof ResourceNotFoundException) {
-      console.warn(`Queue with ID ${queueId} not found. It may have been deleted.`);
-    } else if (error instanceof Error && error.message.includes('Invalid parameter')) {
-      console.warn(`Invalid queue ID: ${queueId}. Please check the ID and ensure it's correctly formatted.`);
-    } else if (error instanceof AccessDeniedException) {
-      console.error(`Access denied: You don't have permission to access queue ${queueId}.`);
-    } else {
-      console.error(`Unexpected error downloading queue ${queueId}:`, error.message);
+  if (name && !queueId) {
+    queueIdToUse = await getIdByName(connectClient, instanceId, name);
+    if (!queueIdToUse) {
+      throw new ResourceNotFoundException({
+        message: `Queue with name "${name}" not found.`,
+        $metadata: {}
+      });
     }
-
-    return null;
   }
+  
+  const command: DescribeQueueCommand = new DescribeQueueCommand({
+    InstanceId: instanceId,
+    QueueId: queueIdToUse
+  });
+ 
+  const response: DescribeQueueCommandOutput = await connectClient.send(command);
+  if(!response.Queue) return undefined;
+  
+  const queue: IQueue = response.Queue;
+  
+  const queueData: Queue = {
+    Queue: {
+      QueueId: queue.QueueId,
+      QueueArn: queue.QueueArn,
+      Name: queue.Name,
+      Description: queue.Description,
+      OutboundCallerConfig: queue.OutboundCallerConfig,
+      HoursOfOperationId: queue.HoursOfOperationId,
+      MaxContacts: queue.MaxContacts,
+      Status: queue.Status,
+      Tags: queue.Tags
+    }
+  };
+  
+  return queueData;
 }
 
-export async function downloadAllQueues({
-  connectClient,
-  instanceId, 
-  componentType,
-  outputDir,
-  overWrite
-}: TDownloadComponentParams): Promise<string[]> {
-  if (!connectClient) {
-    throw new Error('ConnectClient is not provided');
-  }
+async function getIdByName(connectClient: ConnectClient, instanceId: string, name: string): Promise<string | undefined> {
+    const command = new ListQueuesCommand({ InstanceId: instanceId });
+    const response: ListQueuesCommandOutput = await connectClient.send(command);
 
-  const listResponse: ListQueuesCommandOutput = await connectClient.send(new ListQueuesCommand({ InstanceId: instanceId }));
+    const queueId = response.QueueSummaryList?.find(queue => queue.Name === name);
 
-  const queues: QueueSummary[] | undefined = listResponse.QueueSummaryList;
+    return queueId?.Id;
+}
 
-  if (!queues || queues.length === 0) {
+export async function downloadAllQueues( 
+  connectClient: ConnectClient,
+  instanceId: string,
+): Promise<(Queue | undefined)[]> {
+  
+  const command: ListQueuesCommand = new ListQueuesCommand({ InstanceId: instanceId })
+  const listResponse: ListQueuesCommandOutput = await connectClient.send(command);
+
+  if (!listResponse.QueueSummaryList || listResponse.QueueSummaryList.length === 0) {
     console.warn('No Queues found for this Connect instance.');
     return [];
   }
 
-  const downloadPromises = queues
-    .filter(summary =>
-      summary.Id && 
-      summary.Name)
-    .map(summary => 
-      downloadSpecificQueue({
-        connectClient,
-        instanceId,
-        componentType,
-        outputDir,
-        overWrite,
-        id: summary.Id!,
-      }).catch(() => null)
-    );
-      
-  const downloadResults = await Promise.all(downloadPromises);
+  const queues: Promise<Queue | undefined>[] = listResponse.QueueSummaryList
+  .filter((QueueSummary) => QueueSummary.Id && QueueSummary.Name)  // Filter out items without an ID and Names
+  .map((QueueSummary) =>
+    downloadSpecificQueue(
+      connectClient,
+      instanceId,
+      QueueSummary.Id!
+    )
+  );
+  
+  const queueData: (Queue | undefined)[] = await Promise.all(queues)
 
-  // Filter out null results (failed downloads) and return successful downloads
-  return downloadResults.filter((result): result is string => result !== null);
+  return queueData
 }
