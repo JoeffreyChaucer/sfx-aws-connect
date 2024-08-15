@@ -13,7 +13,7 @@ export interface Queue {
   Queue: IQueue;
 }
 
-export async function downloadSpecificQueue(
+export async function fetchSpecificQueue(
   connectClient: ConnectClient,
   instanceId: string,
   queueId?: string,
@@ -69,7 +69,7 @@ async function getIdByName(connectClient: ConnectClient, instanceId: string, nam
     return queueId?.Id;
 }
 
-export async function downloadAllQueues( 
+export async function fetchAllQueues( 
   connectClient: ConnectClient,
   instanceId: string,
 ): Promise<(Queue | undefined)[]> {
@@ -85,7 +85,7 @@ export async function downloadAllQueues(
   const queues: Promise<Queue | undefined>[] = listResponse.QueueSummaryList
   .filter((QueueSummary) => QueueSummary.Id && QueueSummary.Name)  // Filter out items without an ID and Names
   .map((QueueSummary) =>
-    downloadSpecificQueue(
+    fetchSpecificQueue(
       connectClient,
       instanceId,
       QueueSummary.Id!

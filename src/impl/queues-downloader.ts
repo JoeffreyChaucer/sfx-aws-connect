@@ -1,6 +1,6 @@
 import { ConnectClient } from "@aws-sdk/client-connect";
 
-import { Queue, downloadAllQueues, downloadSpecificQueue } from '../download/queues.js';
+import { Queue, fetchAllQueues, fetchSpecificQueue } from '../download/queues.js';
 
 export class QueueDownloader {
   async downloadComponent(
@@ -10,10 +10,10 @@ export class QueueDownloader {
     name?: string
   ): Promise<Queue | Queue[] | undefined> {
     if (id || name) {
-      return downloadSpecificQueue(connectClient, instanceId, id, name);
+      return fetchSpecificQueue(connectClient, instanceId, id, name);
     }
  
-    const allQueues = await downloadAllQueues(connectClient, instanceId);
+    const allQueues = await fetchAllQueues(connectClient, instanceId);
 
     return allQueues.filter((item): item is Queue => item !== undefined);
   }

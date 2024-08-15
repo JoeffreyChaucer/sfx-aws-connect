@@ -11,7 +11,7 @@ export interface AgentStatus {
   AgentStatus: IAgentStatus;
 }
 
-export async function downloadSpecificAgentStatus(
+export async function fetchSpecificAgentStatus(
   connectClient: ConnectClient,
   instanceId: string,
   agentStatusId?: string,
@@ -69,7 +69,7 @@ async function getIdByName(connectClient: ConnectClient, instanceId: string, nam
 }
 
 
-export async function downloadAllAgentStatuses( 
+export async function fetchAllAgentStatuses( 
   connectClient: ConnectClient,
   instanceId: string,
 ): Promise<(AgentStatus | undefined)[]> {
@@ -85,7 +85,7 @@ export async function downloadAllAgentStatuses(
   const agentStatus: Promise<AgentStatus | undefined>[] = listResponse.AgentStatusSummaryList
   .filter((AgentStatusSummary) => AgentStatusSummary.Id && AgentStatusSummary.Name)  // Filter out items without an ID and Names
   .map((AgentStatusSummary) =>
-    downloadSpecificAgentStatus(
+    fetchSpecificAgentStatus(
       connectClient,
       instanceId,
       AgentStatusSummary.Id!

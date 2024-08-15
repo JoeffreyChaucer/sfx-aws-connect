@@ -13,7 +13,7 @@ export interface HoursOfOperation {
   HoursOfOperation: IHoursOfOperation;
 }
 
-export async function downloadSpecificHoursOfOperation(
+export async function fetchSpecificHoursOfOperation(
   connectClient: ConnectClient,
   instanceId: string,
   hoursOfOperationId?: string,
@@ -67,7 +67,7 @@ async function getIdByName(connectClient: ConnectClient, instanceId: string, nam
     return hoursOfOperationId?.Id;
 }
 
-export async function downloadAllHoursOfOperation( 
+export async function fetchAllHoursOfOperation( 
   connectClient: ConnectClient,
   instanceId: string,
 ): Promise<(HoursOfOperation | undefined)[]> {
@@ -83,7 +83,7 @@ export async function downloadAllHoursOfOperation(
   const hoursOfOperation: Promise<HoursOfOperation | undefined>[] = listResponse.HoursOfOperationSummaryList
   .filter((HoursOfOperationSummary) => HoursOfOperationSummary.Id && HoursOfOperationSummary.Name)  // Filter out items without an ID and Names
   .map((HoursOfOperationSummary) =>
-    downloadSpecificHoursOfOperation(
+    fetchSpecificHoursOfOperation(
       connectClient,
       instanceId,
       HoursOfOperationSummary.Id!

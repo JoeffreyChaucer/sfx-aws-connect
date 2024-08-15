@@ -1,6 +1,6 @@
 import { ConnectClient } from "@aws-sdk/client-connect";
 
-import { AgentStatus, downloadAllAgentStatuses, downloadSpecificAgentStatus } from '../download/agent-status.js';
+import { AgentStatus, fetchAllAgentStatuses, fetchSpecificAgentStatus } from '../download/agent-status.js';
 
 export class AgentStatusDownloader {
   async downloadComponent(
@@ -10,10 +10,10 @@ export class AgentStatusDownloader {
     name?: string
   ): Promise<AgentStatus | AgentStatus[] | undefined> {
     if (id || name) {
-      return downloadSpecificAgentStatus(connectClient, instanceId, id, name);
+      return fetchSpecificAgentStatus(connectClient, instanceId, id, name);
     }
  
-      const allHoursOfOperation = await downloadAllAgentStatuses(connectClient, instanceId);
+      const allHoursOfOperation = await fetchAllAgentStatuses(connectClient, instanceId);
 
       return allHoursOfOperation.filter((item): item is AgentStatus => item !== undefined);
     

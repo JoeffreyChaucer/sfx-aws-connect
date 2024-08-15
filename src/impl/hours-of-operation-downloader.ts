@@ -1,6 +1,6 @@
 import { ConnectClient } from "@aws-sdk/client-connect";
 
-import { HoursOfOperation, downloadAllHoursOfOperation, downloadSpecificHoursOfOperation } from '../download/hours-of-operation.js';
+import { HoursOfOperation, fetchAllHoursOfOperation, fetchSpecificHoursOfOperation } from '../download/hours-of-operation.js';
 
 export class HoursOfOperationDownloader {
   async downloadComponent(
@@ -10,10 +10,10 @@ export class HoursOfOperationDownloader {
     name?: string
   ): Promise<HoursOfOperation | HoursOfOperation[] | undefined> {
     if (id || name) {
-      return downloadSpecificHoursOfOperation(connectClient, instanceId, id, name);
+      return fetchSpecificHoursOfOperation(connectClient, instanceId, id, name);
     }
  
-      const allHoursOfOperation = await downloadAllHoursOfOperation(connectClient, instanceId);
+      const allHoursOfOperation = await fetchAllHoursOfOperation(connectClient, instanceId);
 
       return allHoursOfOperation.filter((item): item is HoursOfOperation => item !== undefined);
     
