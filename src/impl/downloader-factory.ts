@@ -2,6 +2,7 @@ import { AgentStatusDownloader } from './agent-status-downloader.js';
 import { ContactFlowDownloader } from './contact-flows-downloader.js';
 import { HoursOfOperationDownloader } from './hours-of-operation-downloader.js';
 import { QueueDownloader } from './queues-downloader.js';
+import { RoutingProfileDownloader } from './routing-profiles-downloader.js';
 // Import other downloader classes as they are implemented
 // import { PromptDownloader } from './prompt-downloader.js';
 // import { ContactFlowDownloader } from './contact-flow-downloader.js';
@@ -40,9 +41,7 @@ export const DownloaderFactory = {
       }
 
       case 'routingprofile': {
-        // TODO: Implement RoutingProfileDownloader
-        // return new RoutingProfileDownloader();
-        throw new Error('RoutingProfile downloader not yet implemented');
+        return new RoutingProfileDownloader();
       }
 
       case 'agentstatus': {

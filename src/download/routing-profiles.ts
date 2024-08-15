@@ -13,7 +13,7 @@ export interface RoutingProfile {
   RoutingProfile: IRoutingProfile;
 }
 
-export async function downloadSpecificRoutingProfile(
+export async function fetchSpecificRoutingProfile(
   connectClient: ConnectClient,
   instanceId: string,
   routingProfileId?: string,
@@ -73,7 +73,7 @@ async function getIdByName(connectClient: ConnectClient, instanceId: string, nam
     return routingProfileId?.Id;
 }
 
-export async function downloadAllRoutingProfiles( 
+export async function fetchAllRoutingProfiles( 
   connectClient: ConnectClient,
   instanceId: string,
 ): Promise<(RoutingProfile | undefined)[]> {
@@ -92,7 +92,7 @@ export async function downloadAllRoutingProfiles(
   const routingProfiles: Promise<RoutingProfile | undefined>[] = listResponse.RoutingProfileSummaryList
   .filter((RoutingProfileSummary) => RoutingProfileSummary.Id && RoutingProfileSummary.Name)  // Filter out items without an ID and Names
   .map((RoutingProfileSummary) =>
-    downloadSpecificRoutingProfile(
+    fetchSpecificRoutingProfile(
       connectClient,
       instanceId,
       RoutingProfileSummary.Id!
