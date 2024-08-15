@@ -1,5 +1,6 @@
 import { AgentStatusDownloader } from './agent-status-downloader.js';
 import { HoursOfOperationDownloader } from './hours-of-operation-downloader.js';
+import { QueueDownloader } from './queues-downloader.js';
 // Import other downloader classes as they are implemented
 // import { PromptDownloader } from './prompt-downloader.js';
 // import { ContactFlowDownloader } from './contact-flow-downloader.js';
@@ -19,8 +20,7 @@ export const DownloaderFactory = {
       }
 
       case 'queue': {
-        // return new Queueodwnloader();
-        throw new Error('queue downloader not yet implemented');
+        return new QueueDownloader()
       }
 
       case 'all': {

@@ -1,114 +1,105 @@
-import { AccessDeniedException, DescribeRoutingProfileCommand, DescribeRoutingProfileCommandOutput, RoutingProfile as IRoutingProfile, ListRoutingProfilesCommand, ListRoutingProfilesCommandOutput, ResourceNotFoundException } from "@aws-sdk/client-connect";
-import path from "node:path";
+import type { ConnectClient } from "@aws-sdk/client-connect";
 
-import { AwsComponentData, AwsComponentFileWriter } from '../services/aws-component-file-writer.js';
-import { TDownloadComponentParams } from '../types/index.js';
+import { 
+  DescribeRoutingProfileCommand, 
+  DescribeRoutingProfileCommandOutput,  
+  RoutingProfile as IRoutingProfile, 
+  ListRoutingProfilesCommand, 
+  ListRoutingProfilesCommandOutput, 
+  ResourceNotFoundException
+} from "@aws-sdk/client-connect";
 
-interface RoutingProfile extends AwsComponentData {
-  RoutingProfile: IRoutingProfile,
-};
-
-export async function downloadSpecificRoutingProfile({
-  connectClient,
-  instanceId,
-  componentType,
-  id: routingProfileId,
-  outputDir,
-  overWrite
-}: TDownloadComponentParams): Promise<string | null> {
-  if (!connectClient) {
-    throw new Error('ConnectClient is not provided');
-  }
-  
-  let safeOutputDir: string;
-  
-  const writer = new AwsComponentFileWriter<RoutingProfile>();
-
-  if (componentType === 'all') {
-    safeOutputDir = path.join(outputDir || process.cwd(), 'routingProfiles');
-  } else {
-    const defaultOutputDir = path.join(process.cwd(), 'metadata', 'routingProfiles');
-    safeOutputDir = outputDir || defaultOutputDir;
-  }
- 
-  try {
-    const describeResponse: DescribeRoutingProfileCommandOutput = await connectClient.send(new DescribeRoutingProfileCommand({
-      InstanceId: instanceId,
-      RoutingProfileId: routingProfileId
-    }));
-    
-    const routingProfile: IRoutingProfile | undefined = describeResponse.RoutingProfile;
-    if (!routingProfile) return null;
-    
-    
-    const restructuredData: RoutingProfile = {
-      RoutingProfile: {
-        Name: routingProfile.Name,
-        RoutingProfileArn: routingProfile.RoutingProfileArn,
-        RoutingProfileId: routingProfile.RoutingProfileId,
-        Description: routingProfile.Description,
-        MediaConcurrencies: routingProfile.MediaConcurrencies,
-        DefaultOutboundQueueId: routingProfile.DefaultOutboundQueueId,
-        Tags: routingProfile.Tags,
-      }
-    };
-    
-    const fileName: string | undefined = routingProfile.Name;
-    await writer.writeComponentFile(safeOutputDir, restructuredData, overWrite);
-    
-    return fileName ?? null;
-    
-  } catch (error) {
-    if (error instanceof ResourceNotFoundException) {
-      console.warn(`Routing Profile with ID ${routingProfileId} not found. It may have been deleted.`);
-    } else if (error instanceof Error && error.message.includes('Invalid parameter')) {
-      console.warn(`Invalid Routing Profile ID: ${routingProfileId}. Please check the ID and ensure it's correctly formatted.`);
-    } else if (error instanceof AccessDeniedException) {
-      console.error(`Access denied: You don't have permission to access Routing Profile ${routingProfileId}.`);
-    } else {
-      console.error(`Unexpected error downloading Routing Profile ${routingProfileId}:`, error);
-    }
-
-    return null;
- 
-  }
+export interface RoutingProfile {
+  RoutingProfile: IRoutingProfile;
 }
 
-export async function downloadAllRoutingProfiles({
-  connectClient,
-  instanceId, 
-  componentType,
-  outputDir,
-  overWrite
-}: TDownloadComponentParams): Promise<string[]> {
+export async function downloadSpecificRoutingProfile(
+  connectClient: ConnectClient,
+  instanceId: string,
+  routingProfileId?: string,
+  name?: string
+): Promise<RoutingProfile | undefined> {
+  let routingProfileIdToUse = routingProfileId;
+  
+  if (name && !routingProfileId) {
+    routingProfileIdToUse = await getIdByName(connectClient, instanceId, name);
+    if (!routingProfileIdToUse) {
+      throw new ResourceNotFoundException({
+        message: `Routing Profile with name "${name}" not found.`,
+        $metadata: {}
+      });
+    }
+  }
+  
+  const command: DescribeRoutingProfileCommand = new DescribeRoutingProfileCommand({
+    InstanceId: instanceId,
+    RoutingProfileId: routingProfileIdToUse
+  });
+ 
+  const response: DescribeRoutingProfileCommandOutput = await connectClient.send(command);
+
+  if(!response.RoutingProfile) return undefined
+  
+  const routingProfile: IRoutingProfile = response.RoutingProfile
+  
+  const routingProfileData: RoutingProfile = {
+    RoutingProfile: {
+      InstanceId: routingProfile.InstanceId,
+      Name: routingProfile.Name,
+      RoutingProfileArn: routingProfile.RoutingProfileArn,
+      RoutingProfileId: routingProfile.RoutingProfileId,
+      Description: routingProfile.Description,
+      MediaConcurrencies: routingProfile.MediaConcurrencies,
+      DefaultOutboundQueueId: routingProfile.DefaultOutboundQueueId,
+      Tags: routingProfile.Tags,
+      NumberOfAssociatedQueues: routingProfile.NumberOfAssociatedQueues,
+      NumberOfAssociatedUsers: routingProfile.NumberOfAssociatedUsers,
+      AgentAvailabilityTimer: routingProfile.AgentAvailabilityTimer,
+      LastModifiedTime: routingProfile.LastModifiedTime,
+      LastModifiedRegion: routingProfile.LastModifiedRegion,
+      IsDefault: routingProfile.IsDefault
+    }
+  };
+  
+  return routingProfileData;
+}
+
+async function getIdByName(connectClient: ConnectClient, instanceId: string, name: string): Promise<string | undefined> {
+    const command = new ListRoutingProfilesCommand({ InstanceId: instanceId });
+    const response: ListRoutingProfilesCommandOutput = await connectClient.send(command);
+
+    const routingProfileId = response.RoutingProfileSummaryList?.find(profile => profile.Name === name);
+
+    return routingProfileId?.Id;
+}
+
+export async function downloadAllRoutingProfiles( 
+  connectClient: ConnectClient,
+  instanceId: string,
+): Promise<(RoutingProfile | undefined)[]> {
   if (!connectClient) {
     throw new Error('ConnectClient is not provided');
   }
 
-  const listResponse: ListRoutingProfilesCommandOutput = await connectClient.send(new ListRoutingProfilesCommand({ InstanceId: instanceId }));
+  const command: ListRoutingProfilesCommand = new ListRoutingProfilesCommand({ InstanceId: instanceId })
+  const listResponse: ListRoutingProfilesCommandOutput = await connectClient.send(command);
 
   if (!listResponse.RoutingProfileSummaryList || listResponse.RoutingProfileSummaryList.length === 0) {
     console.warn('No Routing Profiles found for this Connect instance.');
     return [];
   }
 
-  const downloadPromises: Promise<string | null>[] = listResponse.RoutingProfileSummaryList
-    .filter(summary => 
-      summary.Id && 
-      summary.Name)
-    .map(summary => 
-      downloadSpecificRoutingProfile({
-        connectClient,
-        instanceId,
-        componentType,
-        outputDir,
-        overWrite,
-        id: summary.Id!,
-      }).catch(() => null)
-    );
-    
-  const downloadResults: (string | null)[] = await Promise.all(downloadPromises);
+  const routingProfiles: Promise<RoutingProfile | undefined>[] = listResponse.RoutingProfileSummaryList
+  .filter((RoutingProfileSummary) => RoutingProfileSummary.Id && RoutingProfileSummary.Name)  // Filter out items without an ID and Names
+  .map((RoutingProfileSummary) =>
+    downloadSpecificRoutingProfile(
+      connectClient,
+      instanceId,
+      RoutingProfileSummary.Id!
+    )
+  );
+  
+  const routingProfileData: (RoutingProfile | undefined)[] = await Promise.all(routingProfiles)
 
-  // Filter out null results (failed downloads) and return successful downloads
-  return downloadResults.filter((result): result is string => result !== null);
+  return routingProfileData
 }
