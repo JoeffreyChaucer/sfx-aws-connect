@@ -1,4 +1,5 @@
 import { AgentStatusDownloader } from './agent-status-downloader.js';
+import { ContactFlowDownloader } from './contact-flows-downloader.js';
 import { HoursOfOperationDownloader } from './hours-of-operation-downloader.js';
 import { QueueDownloader } from './queues-downloader.js';
 // Import other downloader classes as they are implemented
@@ -35,9 +36,7 @@ export const DownloaderFactory = {
       }
 
       case 'contactflow': {
-        // TODO: Implement ContactFlowDownloader
-        // return new ContactFlowDownloader();
-        throw new Error('ContactFlow downloader not yet implemented');
+        return new ContactFlowDownloader();
       }
 
       case 'routingprofile': {
